@@ -1,0 +1,288 @@
+header{
+  width: 100vw;
+    height: 60px;
+    background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0.8)
+    ),
+    url("../../../public/noise-bg.webp");
+
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: BeVietNamPro, sans-serif;
+}
+.headerContent{
+  max-width: 1280px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #000000;
+}
+.logo img{
+  height: 50px;
+}
+.searchBar{
+  width: 400px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.searchBar svg {
+  position: absolute;
+  left: 20px;
+  z-index: 1;
+  color: #888;
+  font-size: 18px;
+}
+.searchBar input{
+  width: 100%;
+  padding: 8px 20px 8px 50px;
+  border: none;
+  border-radius: 25px;
+  background-color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.searchBar input::placeholder {
+  color: #888;
+  font-size: 15px;
+}
+.navLinks{
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.navLinks a, .navLinks select{
+  width: auto;
+  height: 40px;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #000000;
+  transition: background-color 0.3s;
+  font-weight: 600;
+}
+.navLinks a:hover, .navLinks select:hover{
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.navLinks a.active{
+  background-color: rgba(0, 0, 0, 0.15);
+  
+}
+.productSelect{
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.productSelect.active{
+  background-color: rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
+
+/* Custom Dropdown Styles */
+.dropdownContainer {
+  position: relative;
+}
+
+.dropdownButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: BeVietNamPro, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.dropdownButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dropdownButton.active {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.dropdownButton .arrow {
+  font-size: 10px;
+  transition: transform 0.3s;
+}
+
+.dropdownButton.open .arrow {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 200px;
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0.8)
+    ),
+    url("../../../public/noise-bg.webp");
+
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownItem {
+  padding: 16px 20px;
+  color: #000000;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.userActions{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+}
+.userActions div{
+  padding: 8px;
+  transition: background-color 0.3s;
+}
+
+/* Cart Container & Popup */
+.cartContainer {
+  position: relative;
+}
+
+.cartIcon {
+  display: flex;
+  align-items: center;
+  color: #000000;
+  font-size: 20px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.cartIcon:hover {
+  color: #555;
+}
+
+.cartPopup {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: -140px;
+  width: 420px;
+  max-height: 500px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+.cartHeader {
+  padding: 16px 20px;
+  background-color: #f8f9fa;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
+  color: #000000;
+}
+
+.cartItems {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.emptyCart {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+.cartFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.cartTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.totalAmount {
+  color: #000;
+  font-size: 20px;
+}
+
+.checkoutButton {
+  width: 100%;
+  padding: 12px;
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.checkoutButton:hover {
+  background-color: #2d3436;
+}
+
+.loginButton{
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid #000000;
+  display: flex;
+  align-items: center;
+}
+.loginButton span{
+  margin-left: 8px;
+}
