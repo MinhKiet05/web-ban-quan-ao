@@ -55,8 +55,9 @@ header{
 }
 .navLinks{
   display: flex;
-  gap: 20px;
+  justify-content: space-between;
   align-items: center;
+  width: 304px;
 }
 .navLinks a, .navLinks select{
   width: auto;
@@ -67,14 +68,14 @@ header{
   text-decoration: none;
   color: #000000;
   transition: background-color 0.3s;
-  font-weight: 600;
+  
 }
 .navLinks a:hover, .navLinks select:hover{
-  background-color: rgba(0, 0, 0, 0.1);
+  font-weight: 600;
 }
 .navLinks a.active{
-  background-color: rgba(0, 0, 0, 0.15);
   
+  font-weight: 600;
 }
 .productSelect{
   border: none;
@@ -82,7 +83,6 @@ header{
   cursor: pointer;
 }
 .productSelect.active{
-  background-color: rgba(0, 0, 0, 0.15);
   font-weight: 600;
 }
 
@@ -101,19 +101,11 @@ header{
   background: transparent;
   color: #000000;
   font-size: 16px;
-  font-weight: 600;
   font-family: BeVietNamPro, sans-serif;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
-.dropdownButton:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.dropdownButton.active {
-  background-color: rgba(0, 0, 0, 0.15);
-}
 
 .dropdownButton .arrow {
   font-size: 10px;
