@@ -61,11 +61,10 @@ CREATE TYPE return_status AS ENUM ('pending', 'approved', 'rejected', 'processin
 -- =====================================================
 -- This table stores user profile information, NOT authentication data
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(50) PRIMARY KEY,
     
     -- Profile Information
     full_name VARCHAR(100),
-    display_name VARCHAR(50),
     avatar_url TEXT,
     date_of_birth DATE,
     gender VARCHAR(10), -- male, female, other, prefer_not_to_say
@@ -85,14 +84,8 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
     is_blocked BOOLEAN DEFAULT FALSE,
-    blocked_reason TEXT,
-    
-    -- Preferences
-    preferred_language VARCHAR(5) DEFAULT 'vi',
-    timezone VARCHAR(50) DEFAULT 'Asia/Ho_Chi_Minh',
     
     -- Metadata
-    last_seen_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -115,8 +108,8 @@ COMMENT ON COLUMN users.tier IS 'Customer loyalty tier for special benefits';
 -- =====================================================
 -- This table handles all authentication methods
 CREATE TABLE accounts (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Account Type & Identifier
     account_type account_type NOT NULL,
@@ -124,7 +117,6 @@ CREATE TABLE accounts (
     
     -- For email/phone authentication
     password_hash VARCHAR(255),
-    password_salt VARCHAR(255),
     
     -- Verification
     is_verified BOOLEAN DEFAULT FALSE,
@@ -141,8 +133,6 @@ CREATE TABLE accounts (
     oauth_provider_user_id VARCHAR(255),
     oauth_access_token TEXT,
     oauth_refresh_token TEXT,
-    oauth_token_expires_at TIMESTAMP,
-    oauth_profile_data JSONB,
     
     -- Security
     failed_login_attempts INT DEFAULT 0,
@@ -177,19 +167,16 @@ COMMENT ON COLUMN accounts.account_type IS 'Type of authentication: email, phone
 -- TABLE: sessions (User Sessions)
 -- =====================================================
 CREATE TABLE sessions (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    account_id VARCHAR(50) NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     
     -- Session Data
     session_token VARCHAR(500) UNIQUE NOT NULL,
     refresh_token VARCHAR(500) UNIQUE,
     
     -- Device Info
-    device_name VARCHAR(200),
     device_type VARCHAR(50), -- mobile, tablet, desktop
-    browser VARCHAR(100),
-    os VARCHAR(100),
     ip_address VARCHAR(45),
     user_agent TEXT,
     
@@ -216,8 +203,8 @@ COMMENT ON TABLE sessions IS 'Active user sessions with JWT/token management';
 -- Note: OAuth data is now stored directly in accounts table
 -- This table can be used for additional OAuth metadata if needed
 CREATE TABLE oauth_providers (
-    id BIGSERIAL PRIMARY KEY,
-    account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    account_id VARCHAR(50) NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     provider oauth_provider_enum NOT NULL,
     provider_user_id VARCHAR(255) NOT NULL,
     email VARCHAR(150),
@@ -237,8 +224,8 @@ COMMENT ON TABLE oauth_providers IS 'Extended OAuth provider data (optional, mai
 -- TABLE: addresses
 -- =====================================================
 CREATE TABLE addresses (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Recipient Info
     recipient_name VARCHAR(100) NOT NULL,
@@ -279,8 +266,8 @@ COMMENT ON TABLE addresses IS 'User shipping/billing addresses';
 -- TABLE: categories
 -- =====================================================
 CREATE TABLE categories (
-    id SERIAL PRIMARY KEY,
-    parent_id INT REFERENCES categories(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    parent_id VARCHAR(50) REFERENCES categories(id) ON DELETE CASCADE,
     
     -- Category Info
     name VARCHAR(100) NOT NULL,
@@ -322,8 +309,8 @@ COMMENT ON COLUMN categories.path IS 'Materialized path for efficient tree queri
 -- TABLE: products
 -- =====================================================
 CREATE TABLE products (
-    id BIGSERIAL PRIMARY KEY,
-    category_id INT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+    id VARCHAR(50) PRIMARY KEY,
+    category_id VARCHAR(50) NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
     
     -- Basic Info
     name VARCHAR(255) NOT NULL,
@@ -336,23 +323,11 @@ CREATE TABLE products (
     
     -- Product Details
     brand VARCHAR(100),
-    manufacturer VARCHAR(150),
-    origin_country VARCHAR(100),
-    material VARCHAR(200),
-    style VARCHAR(100),
-    season VARCHAR(50), -- Spring/Summer/Fall/Winter/All Season
-    
-    -- Care & Features
-    care_instructions TEXT,
-    features JSONB, -- Array of feature points
     
     -- Pricing
     base_price DECIMAL(12,2) NOT NULL CHECK (base_price >= 0),
-    compare_at_price DECIMAL(12,2) CHECK (compare_at_price >= base_price),
-    cost_price DECIMAL(12,2) CHECK (cost_price >= 0),
     
-    -- Tax & Shipping
-    tax_rate DECIMAL(5,2) DEFAULT 0,
+    -- Shipping
     requires_shipping BOOLEAN DEFAULT TRUE,
     weight_grams INT,
     
@@ -395,21 +370,18 @@ COMMENT ON TABLE products IS 'Main product catalog';
 -- TABLE: product_variants
 -- =====================================================
 CREATE TABLE product_variants (
-    id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     
     -- Variant Attributes
     sku VARCHAR(100) UNIQUE NOT NULL,
-    barcode VARCHAR(100) UNIQUE,
     size VARCHAR(20) NOT NULL,
     color VARCHAR(50) NOT NULL,
-    color_hex VARCHAR(7),
     color_image_url TEXT,
     
     -- Pricing
     price DECIMAL(12,2) NOT NULL CHECK (price >= 0),
     sale_price DECIMAL(12,2) CHECK (sale_price >= 0 AND sale_price < price),
-    cost_price DECIMAL(12,2) CHECK (cost_price >= 0),
     
     -- Inventory
     stock_qty INT DEFAULT 0 CHECK (stock_qty >= 0),
@@ -419,9 +391,6 @@ CREATE TABLE product_variants (
     
     -- Physical Properties
     weight_grams INT,
-    length_cm DECIMAL(8,2),
-    width_cm DECIMAL(8,2),
-    height_cm DECIMAL(8,2),
     
     -- Media
     image_url TEXT,
@@ -438,7 +407,6 @@ CREATE TABLE product_variants (
 
 CREATE INDEX idx_variants_product_id ON product_variants(product_id);
 CREATE INDEX idx_variants_sku ON product_variants(sku);
-CREATE INDEX idx_variants_barcode ON product_variants(barcode) WHERE barcode IS NOT NULL;
 CREATE INDEX idx_variants_stock ON product_variants(stock_qty);
 CREATE INDEX idx_variants_active ON product_variants(is_active);
 CREATE INDEX idx_variants_is_default ON product_variants(product_id, is_default);
@@ -449,9 +417,9 @@ COMMENT ON TABLE product_variants IS 'Product variations by size and color with 
 -- TABLE: product_images
 -- =====================================================
 CREATE TABLE product_images (
-    id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    variant_id BIGINT REFERENCES product_variants(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    variant_id VARCHAR(50) REFERENCES product_variants(id) ON DELETE CASCADE,
     
     -- Image Data
     url TEXT NOT NULL,
@@ -479,7 +447,7 @@ COMMENT ON TABLE product_images IS 'Product and variant images';
 -- TABLE: vouchers
 -- =====================================================
 CREATE TABLE vouchers (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(50) PRIMARY KEY,
     
     -- Voucher Info
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -493,8 +461,8 @@ CREATE TABLE vouchers (
     -- Conditions
     min_order_value DECIMAL(12,2) DEFAULT 0,
     max_discount_amount DECIMAL(12,2),
-    applicable_categories INT[], -- Array of category IDs
-    applicable_products BIGINT[], -- Array of product IDs
+    applicable_categories VARCHAR(50)[], -- Array of category IDs
+    applicable_products VARCHAR(50)[], -- Array of product IDs
     
     -- Usage Limits
     usage_limit INT, -- Total usage limit
@@ -528,12 +496,12 @@ COMMENT ON TABLE vouchers IS 'Discount vouchers and promotional codes';
 -- TABLE: orders
 -- =====================================================
 CREATE TABLE orders (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(50) PRIMARY KEY,
     
     -- Order Identification
     order_code VARCHAR(20) UNIQUE NOT NULL,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    voucher_id BIGINT REFERENCES vouchers(id) ON DELETE SET NULL,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    voucher_id VARCHAR(50) REFERENCES vouchers(id) ON DELETE SET NULL,
     
     -- Status
     status order_status DEFAULT 'pending' NOT NULL,
@@ -548,7 +516,6 @@ CREATE TABLE orders (
     -- Points & Rewards
     points_earned INT DEFAULT 0,
     points_used INT DEFAULT 0,
-    points_value DECIMAL(12,2) DEFAULT 0,
     
     -- Shipping Address
     shipping_name VARCHAR(100) NOT NULL,
@@ -559,9 +526,6 @@ CREATE TABLE orders (
     shipping_ward VARCHAR(100) NOT NULL,
     shipping_street TEXT NOT NULL,
     shipping_note TEXT,
-    
-    -- Billing Address (if different)
-    billing_address JSONB,
     
     -- Customer Notes
     customer_note TEXT,
@@ -596,9 +560,9 @@ COMMENT ON TABLE orders IS 'Customer orders';
 -- TABLE: order_items
 -- =====================================================
 CREATE TABLE order_items (
-    id BIGSERIAL PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    variant_id BIGINT NOT NULL REFERENCES product_variants(id) ON DELETE RESTRICT,
+    id VARCHAR(50) PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    variant_id VARCHAR(50) NOT NULL REFERENCES product_variants(id) ON DELETE RESTRICT,
     
     -- Product Snapshot (at time of purchase)
     product_name VARCHAR(255) NOT NULL,
@@ -628,8 +592,8 @@ COMMENT ON TABLE order_items IS 'Line items in orders with product snapshots';
 -- TABLE: payments
 -- =====================================================
 CREATE TABLE payments (
-    id BIGSERIAL PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     
     -- Payment Info
     method payment_method NOT NULL,
@@ -667,8 +631,8 @@ COMMENT ON TABLE payments IS 'Payment transactions';
 -- TABLE: shipments
 -- =====================================================
 CREATE TABLE shipments (
-    id BIGSERIAL PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     
     -- Carrier Info
     carrier VARCHAR(50) NOT NULL, -- GHTK, GHN, Viettel Post, etc.
@@ -685,14 +649,10 @@ CREATE TABLE shipments (
     
     -- Package Info
     weight_grams INT,
-    length_cm DECIMAL(8,2),
-    width_cm DECIMAL(8,2),
-    height_cm DECIMAL(8,2),
     
     -- Costs
     shipping_fee DECIMAL(12,2),
     cod_amount DECIMAL(12,2), -- Cash on delivery amount
-    insurance_fee DECIMAL(12,2) DEFAULT 0,
     
     -- Additional Info
     note TEXT,
@@ -720,11 +680,11 @@ COMMENT ON TABLE shipments IS 'Shipment tracking and delivery management';
 -- TABLE: reviews
 -- =====================================================
 CREATE TABLE reviews (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    order_item_id BIGINT REFERENCES order_items(id) ON DELETE SET NULL,
-    variant_id BIGINT REFERENCES product_variants(id) ON DELETE SET NULL,
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id VARCHAR(50) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    order_item_id VARCHAR(50) REFERENCES order_items(id) ON DELETE SET NULL,
+    variant_id VARCHAR(50) REFERENCES product_variants(id) ON DELETE SET NULL,
     
     -- Rating & Content
     rating SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
@@ -734,11 +694,6 @@ CREATE TABLE reviews (
     -- Media
     images JSONB,
     videos JSONB,
-    
-    -- Detailed Ratings (optional)
-    quality_rating SMALLINT CHECK (quality_rating >= 1 AND quality_rating <= 5),
-    fit_rating SMALLINT CHECK (fit_rating >= 1 AND fit_rating <= 5),
-    value_rating SMALLINT CHECK (value_rating >= 1 AND value_rating <= 5),
     
     -- Verification & Moderation
     is_verified_purchase BOOLEAN DEFAULT FALSE,
@@ -751,7 +706,7 @@ CREATE TABLE reviews (
     
     -- Admin Response
     admin_reply TEXT,
-    admin_replied_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    admin_replied_by VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
     replied_at TIMESTAMP,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -774,8 +729,8 @@ COMMENT ON TABLE reviews IS 'Product reviews and ratings';
 -- TABLE: carts
 -- =====================================================
 CREATE TABLE carts (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
     session_id VARCHAR(100) UNIQUE,
     
     -- Cart Metadata
@@ -798,9 +753,9 @@ COMMENT ON TABLE carts IS 'Shopping carts for authenticated users and guest sess
 -- TABLE: cart_items
 -- =====================================================
 CREATE TABLE cart_items (
-    id BIGSERIAL PRIMARY KEY,
-    cart_id BIGINT NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
-    variant_id BIGINT NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    cart_id VARCHAR(50) NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+    variant_id VARCHAR(50) NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
     
     quantity INT NOT NULL CHECK (quantity > 0),
     
@@ -822,9 +777,9 @@ COMMENT ON TABLE cart_items IS 'Items in shopping carts';
 -- TABLE: return_requests
 -- =====================================================
 CREATE TABLE return_requests (
-    id BIGSERIAL PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Return Items (which order items to return)
     return_items JSONB NOT NULL, -- [{order_item_id, quantity, reason}]
@@ -847,7 +802,7 @@ CREATE TABLE return_requests (
     
     -- Admin Actions
     admin_note TEXT,
-    processed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    processed_by VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
     
     -- Return Shipping
     return_tracking_code VARCHAR(100),
@@ -874,10 +829,10 @@ COMMENT ON TABLE return_requests IS 'Product return and refund requests';
 -- TABLE: voucher_usage
 -- =====================================================
 CREATE TABLE voucher_usage (
-    id BIGSERIAL PRIMARY KEY,
-    voucher_id BIGINT NOT NULL REFERENCES vouchers(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    id VARCHAR(50) PRIMARY KEY,
+    voucher_id VARCHAR(50) NOT NULL REFERENCES vouchers(id) ON DELETE CASCADE,
+    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     
     discount_amount DECIMAL(12,2) NOT NULL,
     used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1156,32 +1111,117 @@ LEFT JOIN shipments s ON s.order_id = o.id;
 -- SAMPLE DATA
 -- =====================================================
 
--- Sample users
-INSERT INTO users (full_name, email, phone, role, is_verified) VALUES
-    ('Super Admin', 'admin@fashionstore.vn', '0901234567', 'super_admin', TRUE),
-    ('Nguyễn Văn A', 'nguyenvana@gmail.com', '0912345678', 'customer', TRUE),
-    ('Trần Thị B', 'tranthib@gmail.com', '0923456789', 'customer', TRUE);
+-- Sample users (ID phải được cung cấp thủ công vì dùng VARCHAR)
+INSERT INTO users (id, full_name, email, phone, role, is_verified) VALUES
+    ('usr001', 'Super Admin', 'admin@fashionstore.vn', '0901234567', 'super_admin', TRUE),
+    ('usr002', 'Nguyễn Văn A', 'nguyenvana@gmail.com', '0912345678', 'customer', TRUE),
+    ('usr003', 'Trần Thị B', 'tranthib@gmail.com', '0923456789', 'customer', TRUE),
+    ('usr004', 'Lê Văn C', 'levanc@gmail.com', '0934567890', 'customer', TRUE),
+    ('usr005', 'Phạm Thị D', 'phamthid@yahoo.com', '0945678901', 'customer', TRUE);
 
 -- Sample accounts for users
-INSERT INTO accounts (user_id, account_type, identifier, password_hash, is_verified) VALUES
-    (1, 'email', 'admin@fashionstore.vn', '$2b$10$example_hash_1', TRUE),
-    (2, 'email', 'nguyenvana@gmail.com', '$2b$10$example_hash_2', TRUE),
-    (3, 'phone', '0923456789', '$2b$10$example_hash_3', TRUE);
+INSERT INTO accounts (id, user_id, account_type, identifier, password_hash, is_verified) VALUES
+    ('acc001', 'usr001', 'email', 'admin@fashionstore.vn', '$2b$10$example_hash_1', TRUE),
+    ('acc002', 'usr002', 'email', 'nguyenvana@gmail.com', '$2b$10$example_hash_2', TRUE),
+    ('acc003', 'usr003', 'phone', '0923456789', '$2b$10$example_hash_3', TRUE),
+    ('acc004', 'usr004', 'email', 'levanc@gmail.com', '$2b$10$example_hash_4', TRUE),
+    ('acc005', 'usr005', 'email', 'phamthid@yahoo.com', '$2b$10$example_hash_5', TRUE);
 
 -- Sample categories
-INSERT INTO categories (name, slug, level, path, is_active) VALUES
-    ('Nam', 'nam', 0, '1', TRUE),
-    ('Nữ', 'nu', 0, '2', TRUE),
-    ('Trẻ em', 'tre-em', 0, '3', TRUE),
-    ('Phụ kiện', 'phu-kien', 0, '4', TRUE);
+INSERT INTO categories (id, name, slug, level, path, is_active) VALUES
+    ('cat001', 'Nam', 'nam', 0, 'cat001', TRUE),
+    ('cat002', 'Nữ', 'nu', 0, 'cat002', TRUE),
+    ('cat003', 'Trẻ em', 'tre-em', 0, 'cat003', TRUE),
+    ('cat004', 'Phụ kiện', 'phu-kien', 0, 'cat004', TRUE);
 
-INSERT INTO categories (parent_id, name, slug, level, path, is_active) VALUES
-    (1, 'Áo thun nam', 'ao-thun-nam', 1, '1/5', TRUE),
-    (1, 'Áo sơ mi nam', 'ao-so-mi-nam', 1, '1/6', TRUE),
-    (1, 'Quần jean nam', 'quan-jean-nam', 1, '1/7', TRUE),
-    (2, 'Áo thun nữ', 'ao-thun-nu', 1, '2/8', TRUE),
-    (2, 'Váy', 'vay', 1, '2/9', TRUE),
-    (2, 'Quần jean nữ', 'quan-jean-nu', 1, '2/10', TRUE);
+INSERT INTO categories (id, parent_id, name, slug, level, path, is_active) VALUES
+    ('cat005', 'cat001', 'Áo thun nam', 'ao-thun-nam', 1, 'cat001/cat005', TRUE),
+    ('cat006', 'cat001', 'Áo sơ mi nam', 'ao-so-mi-nam', 1, 'cat001/cat006', TRUE),
+    ('cat007', 'cat001', 'Quần jean nam', 'quan-jean-nam', 1, 'cat001/cat007', TRUE),
+    ('cat008', 'cat002', 'Áo thun nữ', 'ao-thun-nu', 1, 'cat002/cat008', TRUE),
+    ('cat009', 'cat002', 'Váy', 'vay', 1, 'cat002/cat009', TRUE),
+    ('cat010', 'cat002', 'Quần jean nữ', 'quan-jean-nu', 1, 'cat002/cat010', TRUE);
+
+-- Sample products
+INSERT INTO products (id, category_id, name, slug, sku, brand, short_description, description, base_price, status, is_featured, published_at) VALUES
+    ('prd001', 'cat005', 'Áo Thun Nam Basic', 'ao-thun-nam-basic', 'ATN-001', 'Local Brand', 'Áo thun nam cotton 100%', 'Áo thun nam chất liệu cotton cao cấp, thoáng mát, dễ phối đồ', 199000, 'active', TRUE, CURRENT_TIMESTAMP),
+    ('prd002', 'cat005', 'Áo Thun Nam Oversize', 'ao-thun-nam-oversize', 'ATN-002', 'Local Brand', 'Áo thun form rộng năng động', 'Áo thun oversize phong cách Hàn Quốc, chất cotton mềm mại', 249000, 'active', TRUE, CURRENT_TIMESTAMP),
+    ('prd003', 'cat006', 'Áo Sơ Mi Nam Trắng', 'ao-so-mi-nam-trang', 'ASM-001', 'Premium', 'Áo sơ mi công sở cao cấp', 'Áo sơ mi nam trắng form slim fit, chất liệu vải oxford cao cấp', 399000, 'active', FALSE, CURRENT_TIMESTAMP),
+    ('prd004', 'cat007', 'Quần Jean Nam Slim Fit', 'quan-jean-nam-slim-fit', 'QJN-001', 'Denim Pro', 'Quần jean co giãn thoải mái', 'Quần jean nam form slim fit, chất denim co giãn nhẹ, màu xanh đen', 499000, 'active', TRUE, CURRENT_TIMESTAMP),
+    ('prd005', 'cat008', 'Áo Thun Nữ Croptop', 'ao-thun-nu-croptop', 'ATNu-001', 'Fashion Girl', 'Áo croptop trẻ trung', 'Áo thun nữ form croptop, chất cotton mềm mịn, nhiều màu sắc', 179000, 'active', TRUE, CURRENT_TIMESTAMP),
+    ('prd006', 'cat009', 'Váy Midi Hoa Nhí', 'vay-midi-hoa-nhi', 'VM-001', 'Vintage', 'Váy midi họa tiết hoa xinh xắn', 'Váy midi dáng xòe, họa tiết hoa nhí vintage, phù hợp dạo phố', 349000, 'active', TRUE, CURRENT_TIMESTAMP);
+
+-- Sample product variants
+INSERT INTO product_variants (id, product_id, sku, size, color, color_image_url, price, stock_qty, is_active, is_default) VALUES
+    -- Áo Thun Nam Basic
+    ('var001', 'prd001', 'ATN-001-M-WHITE', 'M', 'White', NULL, 199000, 50, TRUE, TRUE),
+    ('var002', 'prd001', 'ATN-001-L-WHITE', 'L', 'White', NULL, 199000, 45, TRUE, FALSE),
+    ('var003', 'prd001', 'ATN-001-M-BLACK', 'M', 'Black', NULL, 199000, 40, TRUE, FALSE),
+    ('var004', 'prd001', 'ATN-001-L-BLACK', 'L', 'Black', NULL, 199000, 38, TRUE, FALSE),
+    
+    -- Áo Thun Nam Oversize
+    ('var005', 'prd002', 'ATN-002-L-GRAY', 'L', 'Gray', NULL, 249000, 35, TRUE, TRUE),
+    ('var006', 'prd002', 'ATN-002-XL-GRAY', 'XL', 'Gray', NULL, 249000, 30, TRUE, FALSE),
+    ('var007', 'prd002', 'ATN-002-L-NAVY', 'L', 'Navy', NULL, 249000, 32, TRUE, FALSE),
+    
+    -- Áo Sơ Mi Nam
+    ('var008', 'prd003', 'ASM-001-M-WHITE', 'M', 'White', NULL, 399000, 25, TRUE, TRUE),
+    ('var009', 'prd003', 'ASM-001-L-WHITE', 'L', 'White', NULL, 399000, 22, TRUE, FALSE),
+    
+    -- Quần Jean Nam
+    ('var010', 'prd004', 'QJN-001-30-BLUE', '30', 'Blue', NULL, 499000, 20, TRUE, TRUE),
+    ('var011', 'prd004', 'QJN-001-31-BLUE', '31', 'Blue', NULL, 499000, 18, TRUE, FALSE),
+    ('var012', 'prd004', 'QJN-001-32-BLACK', '32', 'Black', NULL, 499000, 15, TRUE, FALSE),
+    
+    -- Áo Thun Nữ Croptop
+    ('var013', 'prd005', 'ATNu-001-S-PINK', 'S', 'Pink', NULL, 179000, 60, TRUE, TRUE),
+    ('var014', 'prd005', 'ATNu-001-M-PINK', 'M', 'Pink', NULL, 179000, 55, TRUE, FALSE),
+    ('var015', 'prd005', 'ATNu-001-S-WHITE', 'S', 'White', NULL, 179000, 50, TRUE, FALSE),
+    
+    -- Váy Midi
+    ('var016', 'prd006', 'VM-001-S-FLORAL', 'S', 'Floral', NULL, 349000, 28, TRUE, TRUE),
+    ('var017', 'prd006', 'VM-001-M-FLORAL', 'M', 'Floral', NULL, 349000, 25, TRUE, FALSE);
+
+-- Sample vouchers
+INSERT INTO vouchers (id, code, name, type, value, min_order_value, start_date, end_date, usage_limit, is_active) VALUES
+    ('vou001', 'WELCOME10', 'Giảm 10% cho khách hàng mới', 'percent', 10, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30 days', 100, TRUE),
+    ('vou002', 'FREESHIP', 'Miễn phí vận chuyển', 'free_ship', 30000, 200000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '15 days', 50, TRUE),
+    ('vou003', 'SAVE50K', 'Giảm 50K cho đơn từ 500K', 'fixed', 50000, 500000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days', 200, TRUE);
+
+-- Sample addresses
+INSERT INTO addresses (id, user_id, recipient_name, recipient_phone, province, district, ward, street_address, is_default) VALUES
+    ('adr001', 'usr002', 'Nguyễn Văn A', '0912345678', 'Hồ Chí Minh', 'Quận 1', 'Phường Bến Nghé', '123 Lê Lợi', TRUE),
+    ('adr002', 'usr003', 'Trần Thị B', '0923456789', 'Hà Nội', 'Quận Hoàn Kiếm', 'Phường Hàng Bài', '456 Tràng Tiền', TRUE),
+    ('adr003', 'usr004', 'Lê Văn C', '0934567890', 'Hồ Chí Minh', 'Quận 3', 'Phường 7', '789 Nguyễn Thị Minh Khai', TRUE);
+
+-- Sample orders
+INSERT INTO orders (id, order_code, user_id, status, subtotal, shipping_fee, total, shipping_name, shipping_phone, shipping_province, shipping_district, shipping_ward, shipping_street) VALUES
+    ('ord001', 'ORD2026020001', 'usr002', 'completed', 398000, 30000, 428000, 'Nguyễn Văn A', '0912345678', 'Hồ Chí Minh', 'Quận 1', 'Phường Bến Nghé', '123 Lê Lợi'),
+    ('ord002', 'ORD2026020002', 'usr003', 'delivered', 498000, 30000, 528000, 'Trần Thị B', '0923456789', 'Hà Nội', 'Quận Hoàn Kiếm', 'Phường Hàng Bài', '456 Tràng Tiền'),
+    ('ord003', 'ORD2026020003', 'usr004', 'confirmed', 548000, 30000, 578000, 'Lê Văn C', '0934567890', 'Hồ Chí Minh', 'Quận 3', 'Phường 7', '789 Nguyễn Thị Minh Khai');
+
+-- Sample order items
+INSERT INTO order_items (id, order_id, variant_id, product_name, product_slug, sku, size, color, unit_price, quantity, line_total) VALUES
+    ('ori001', 'ord001', 'var001', 'Áo Thun Nam Basic', 'ao-thun-nam-basic', 'ATN-001-M-WHITE', 'M', 'White', 199000, 2, 398000),
+    ('ori002', 'ord002', 'var010', 'Quần Jean Nam Slim Fit', 'quan-jean-nam-slim-fit', 'QJN-001-30-BLUE', '30', 'Blue', 499000, 1, 499000),
+    ('ori003', 'ord003', 'var005', 'Áo Thun Nam Oversize', 'ao-thun-nam-oversize', 'ATN-002-L-GRAY', 'L', 'Gray', 249000, 1, 249000),
+    ('ori004', 'ord003', 'var008', 'Áo Sơ Mi Nam Trắng', 'ao-so-mi-nam-trang', 'ASM-001-M-WHITE', 'M', 'White', 399000, 1, 399000);
+
+-- Sample carts
+INSERT INTO carts (id, user_id) VALUES
+    ('crt001', 'usr005'),
+    ('crt002', 'usr002');
+
+-- Sample cart items
+INSERT INTO cart_items (id, cart_id, variant_id, quantity, added_price) VALUES
+    ('cri001', 'crt001', 'var013', 2, 179000),
+    ('cri002', 'crt001', 'var016', 1, 349000),
+    ('cri003', 'crt002', 'var003', 1, 199000);
+
+-- Sample reviews
+INSERT INTO reviews (id, user_id, product_id, order_item_id, variant_id, rating, title, content, is_verified_purchase) VALUES
+    ('rev001', 'usr002', 'prd001', 'ori001', 'var001', 5, 'Sản phẩm rất tốt!', 'Áo đẹp, chất lượng tốt, giá hợp lý. Sẽ quay lại mua thêm!', TRUE),
+    ('rev002', 'usr003', 'prd004', 'ori002', 'var010', 4, 'Tạm ổn', 'Quần jean đẹp nhưng hơi chật so với size thường. Nên mua size lớn hơn 1 size.', TRUE);
 
 -- =====================================================
 -- COMPLETION
