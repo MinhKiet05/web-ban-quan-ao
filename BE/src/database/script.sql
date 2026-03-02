@@ -52,7 +52,7 @@ CREATE TYPE product_status AS ENUM ('draft', 'active', 'archived', 'out_of_stock
 CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'packing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded');
 CREATE TYPE payment_method AS ENUM ('cod', 'vnpay', 'momo', 'zalopay', 'bank_transfer', 'credit_card', 'debit_card');
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded', 'partially_refunded');
-CREATE TYPE shipment_status AS ENUM ('preparing', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'returned', 'failed');
+CREATE TYPE shipment_status AS EN UM ('preparing', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'returned', 'failed');
 CREATE TYPE voucher_type AS ENUM ('percent', 'fixed', 'free_ship');
 CREATE TYPE return_status AS ENUM ('pending', 'approved', 'rejected', 'processing', 'refunded', 'completed');
 

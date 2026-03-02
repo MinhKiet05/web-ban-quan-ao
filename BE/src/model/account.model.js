@@ -50,16 +50,33 @@ const createAccount = async (accountData) => {
 };
 
 /**
- * Find account by identifier (email, phone, or OAuth ID)
- * @param {string} accountType - Account type
+ * Find account by identifier (email, phone, or OAuth ID) with user info
  * @param {string} identifier - Email, phone, or OAuth provider user ID
- * @returns {Promise<Object|null>} Account object or null
+ * @returns {Promise<Object|null>} Account object with user info or null
  */
-const findAccountByIdentifier = async (accountType, identifier) => {
+const findAccountByIdentifier = async (identifier) => {
     try {
         const result = await query(
-            'SELECT * FROM accounts WHERE account_type = $1 AND identifier = $2 LIMIT 1',
-            [accountType, identifier]
+            `SELECT 
+                a.id, 
+                a.user_id, 
+                a.identifier, 
+                a.password_hash,
+                a.account_type,
+                a.is_verified,
+                u.full_name,
+                u.email,
+                u.phone,
+                u.role,
+                u.avatar_url,
+                u.tier,
+                u.loyalty_points,
+                u.is_active
+            FROM accounts a
+            INNER JOIN users u ON a.user_id = u.id
+            WHERE a.identifier = $1 
+            LIMIT 1`,
+            [identifier]
         );
         
         return result.rows.length > 0 ? result.rows[0] : null;
