@@ -277,7 +277,7 @@ header{
 }
 
 .loginButton{
-  padding: 8px;
+  padding: 8px; 
   border-radius: 12px;
   border: 1px solid #000000;
   display: flex;
