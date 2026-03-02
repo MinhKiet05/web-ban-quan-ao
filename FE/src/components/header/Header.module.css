@@ -269,12 +269,51 @@ header{
 }
 
 .loginButton{
-  padding: 8px;
+  padding: 8px; 
   border-radius: 12px;
   border: 1px solid #000000;
   display: flex;
   align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.loginButton:hover{
+  background-color: #f0f0f0;
 }
 .loginButton span{
   margin-left: 8px;
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #000000;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.logoutBtn:hover {
+  color: #e53e3e;
 }
