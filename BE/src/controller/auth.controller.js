@@ -137,6 +137,96 @@ const AuthController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  /**
+   * Logout tất cả thiết bị
+   * POST /api/auth/logout-all
+   * Yêu cầu: Đã đăng nhập (có access token)
+   */
+  logoutAllDevices: async (req, res, next) => {
+    try {
+      const userId = req.user.userId; // Từ authenticate middleware
+
+      // Vô hiệu hóa tất cả sessions của user
+      const count = await authServices.logoutAllDevices(userId);
+
+      // Xóa refresh token cookie của session hiện tại
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+      });
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: `Đã đăng xuất khỏi ${count} thiết bị`,
+        data: {
+          sessionsDeactivated: count
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Lấy danh sách sessions đang active
+   * GET /api/auth/sessions
+   * Yêu cầu: Đã đăng nhập (có access token)
+   */
+  getSessions: async (req, res, next) => {
+    try {
+      const userId = req.user.userId; // Từ authenticate middleware
+      const currentRefreshToken = req.cookies.refreshToken;
+
+      // Lấy danh sách sessions từ service
+      const sessions = await authServices.getUserSessions(userId, currentRefreshToken);
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Lấy danh sách phiên đăng nhập thành công',
+        data: {
+          sessions: sessions,
+          total: sessions.length
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Logout từ một session cụ thể (thiết bị khác)
+   * DELETE /api/auth/sessions/:sessionId
+   * Yêu cầu: Đã đăng nhập (có access token)
+   */
+  logoutSession: async (req, res, next) => {
+    try {
+      const userId = req.user.userId; // Từ authenticate middleware
+      const sessionId = req.params.sessionId;
+
+      // Vô hiệu hóa session cụ thể
+      const success = await authServices.logoutSessionById(sessionId, userId);
+
+      if (!success) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          message: 'Không tìm thấy phiên đăng nhập hoặc không có quyền truy cập'
+        });
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Đã đăng xuất khỏi thiết bị'
+      });
+
+    } catch (error) {
+      next(error);
+    }
   }
 };
 

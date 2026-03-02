@@ -14,18 +14,19 @@ const { findUserById } = require("../model/user.model");
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Ưu tiên lấy token từ cookie, fallback sang Authorization header
-    let token = req.cookies.token;
+    // Ưu tiên lấy token từ Authorization header
+    let token = null;
+    const authHeader = req.header("Authorization");
+    
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    } else if (authHeader) {
+      token = authHeader;
+    }
 
-    // Nếu không có cookie, thử lấy từ Authorization header
+    // Fallback: thử lấy từ cookie (nếu có)
     if (!token) {
-      const authHeader = req.header("Authorization");
-      
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.slice(7);
-      } else if (authHeader) {
-        token = authHeader;
-      }
+      token = req.cookies.token;
     }
 
     // Kiểm tra token có tồn tại không
@@ -41,7 +42,9 @@ const authenticate = async (req, res, next) => {
 
     // Gắn thông tin user từ token vào request
     req.user = {
+      userId: decoded.userId || decoded.id,
       id: decoded.userId || decoded.id,
+      accountId: decoded.accountId,
       email: decoded.email,
       role: decoded.role,
     };

@@ -8,7 +8,9 @@ const {
   findSessionByRefreshToken,
   updateSessionToken,
   deactivateSession,
-  deactivateAllUserSessions
+  deactivateAllUserSessions,
+  getUserActiveSessions,
+  deactivateSessionById
 } = require("../model/session.model");
 const { generateUniqueId } = require("../utils/generateId");
 const bcrypt = require("bcrypt");
@@ -278,6 +280,57 @@ class UserService {
       return count;
     } catch (error) {
       console.error('Error during logout all devices:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách sessions active của user
+   * @param {string} userId - User ID
+   * @param {string} currentRefreshToken - Refresh token hiện tại để đánh dấu session hiện tại
+   * @returns {Promise<Array>} Danh sách sessions
+   */
+  async getUserSessions(userId, currentRefreshToken = null) {
+    try {
+      if (!userId) {
+        throw createError(AUTH_ERRORS.AUTH_ACCOUNT_NOT_FOUND);
+      }
+
+      const sessions = await getUserActiveSessions(userId);
+
+      // Đánh dấu session hiện tại
+      return sessions.map(session => ({
+        id: session.id,
+        deviceType: session.device_type,
+        ipAddress: session.ip_address,
+        createdAt: session.created_at,
+        lastActivity: session.last_activity_at,
+        expiresAt: session.expires_at,
+        isCurrent: currentRefreshToken && session.refresh_token === currentRefreshToken
+      }));
+    } catch (error) {
+      console.error('Error getting user sessions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Logout từ một session cụ thể
+   * @param {string} sessionId - Session ID
+   * @param {string} userId - User ID (để verify ownership)
+   * @returns {Promise<boolean>} True nếu thành công
+   */
+  async logoutSessionById(sessionId, userId) {
+    try {
+      if (!sessionId || !userId) {
+        return false;
+      }
+
+      // Deactivate session với verification
+      const deactivated = await deactivateSessionById(sessionId, userId);
+      return deactivated;
+    } catch (error) {
+      console.error('Error logging out session:', error);
       throw error;
     }
   }

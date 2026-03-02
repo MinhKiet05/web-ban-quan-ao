@@ -257,6 +257,32 @@ const deleteExpiredSessions = async () => {
     }
 };
 
+/**
+ * Vô hiệu hóa một session cụ thể (với verification user ownership)
+ * @param {string} sessionId - Session ID
+ * @param {string} userId - User ID để verify ownership
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+const deactivateSessionById = async (sessionId, userId) => {
+    try {
+        const updateQuery = `
+            UPDATE sessions 
+            SET is_active = FALSE,
+                last_activity_at = NOW()
+            WHERE id = $1
+            AND user_id = $2
+            AND is_active = TRUE
+            RETURNING id
+        `;
+
+        const result = await query(updateQuery, [sessionId, userId]);
+        return result.rows.length > 0;
+    } catch (error) {
+        console.error('Error deactivating session by id:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     createSession,
     findSessionByRefreshToken,
@@ -264,6 +290,7 @@ module.exports = {
     updateSessionToken,
     deactivateSession,
     deactivateAllUserSessions,
+    deactivateSessionById,
     getUserActiveSessions,
     deleteExpiredSessions
 };

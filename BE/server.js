@@ -4,7 +4,7 @@ require('dotenv').config();
 const corsOptions = require('./src/config/cors');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const authRoutes = require('./src/routes/auth.routes');
+const routes = require('./src/routes');
 const { errorHandler, notFoundHandler, generateRequestId } = require('./src/middlewares/errorHandler');
 
 // Middleware để thêm request ID
@@ -22,12 +22,13 @@ app.get('/', (req, res) => {
     res.json({ 
         success: true, 
         message: 'API is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
     });
 });
 
 // API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api', routes);
 
 // 404 handler - phải đặt trước error handler
 app.use(notFoundHandler);
