@@ -8,10 +8,6 @@ const { authenticate } = require('../middlewares/authMiddleware');
  * =====================
  */
 
-// ============================================================================
-// PUBLIC ROUTES (Không cần authentication)
-// ============================================================================
-
 /**
  * @route   POST /api/auth/register
  * @desc    Đăng ký tài khoản mới
@@ -47,10 +43,8 @@ router.post('/refresh', AuthController.refreshToken);
  */
 router.post('/logout', AuthController.logout);
 
-// ============================================================================
-// PROTECTED ROUTES (Cần authentication - Access Token)
-// ============================================================================
 
+// PROTECTED ROUTES (Cần authentication - Access Token)
 /**
  * @route   GET /api/auth/sessions
  * @desc    Lấy danh sách tất cả sessions đang active của user
