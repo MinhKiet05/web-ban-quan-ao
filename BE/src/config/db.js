@@ -16,25 +16,53 @@
 
 const { Pool } = require('pg');
 const { URL } = require('url');
+const dns = require('dns');
+const { promisify } = require('util');
 require('dotenv').config();
 
+const dnsLookup = promisify(dns.lookup);
+
 /**
- * Parse DATABASE_URL to individual components to force IPv4
+ * Custom DNS lookup to force IPv4 resolution
  */
-function parseConnectionString(connectionString) {
+async function lookupIPv4(hostname) {
+    try {
+        const result = await dnsLookup(hostname, { family: 4 });
+        return result.address;
+    } catch (error) {
+        console.error(`DNS lookup failed for ${hostname}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Parse DATABASE_URL to individual components and resolve IPv4
+ */
+async function parseConnectionString(connectionString) {
     const url = new URL(connectionString);
+    
+    // Resolve hostname to IPv4 address
+    let host = url.hostname;
+    try {
+        // Try to resolve to IPv4
+        const ipv4Address = await lookupIPv4(host);
+        console.log(`✅ Resolved ${host} to IPv4: ${ipv4Address}`);
+        host = ipv4Address;
+    } catch (error) {
+        console.warn(`⚠️  Could not resolve to IPv4, using hostname: ${host}`);
+    }
+    
     return {
         user: url.username,
         password: url.password,
-        host: url.hostname,
+        host: host,  // Use resolved IPv4 address
         port: parseInt(url.port) || 5432,
         database: url.pathname.slice(1), // Remove leading '/'
         ssl: { rejectUnauthorized: false },
         max: 10,
         min: 0,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-        family: 4  // Force IPv4
+        connectionTimeoutMillis: 2000
     };
 }
 
@@ -43,21 +71,30 @@ function parseConnectionString(connectionString) {
  * Uses environment variables for security and flexibility
  * Supports both individual credentials and DATABASE_URL (for Supabase)
  */
-const config = process.env.DATABASE_URL 
-    ? parseConnectionString(process.env.DATABASE_URL)
-    : {
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
-        database: process.env.DB_NAME,
-        port: parseInt(process.env.DB_PORT, 10) || 5432,
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-        family: 4  // Force IPv4
-    };
+let config = null;
+
+async function getConfig() {
+    if (config) return config;
+    
+    if (process.env.DATABASE_URL) {
+        config = await parseConnectionString(process.env.DATABASE_URL);
+    } else {
+        config = {
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            host: process.env.DB_HOST,
+            database: process.env.DB_NAME,
+            port: parseInt(process.env.DB_PORT, 10) || 5432,
+            max: 10,
+            min: 0,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 2000,
+            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+        };
+    }
+    
+    return config;
+}
 
 // Global connection pool instance
 let pool = null;
@@ -71,7 +108,10 @@ let pool = null;
  */
 const getPool = () => {
     if (!pool) {
-        pool = new Pool(config);
+        // Initialize config asynchronously
+        (async () => {
+            const poolConfig = await getConfig();
+            pool = new Pool(poolConfig);
         
         // Handle connection errors
         pool.on('error', (err) => {
@@ -87,6 +127,7 @@ const getPool = () => {
                 release();
             }
         });
+        })();
     }
     return pool;
 };
