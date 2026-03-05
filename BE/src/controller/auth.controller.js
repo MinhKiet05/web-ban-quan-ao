@@ -25,8 +25,13 @@ const AuthController = {
         userAgent: req.headers['user-agent']
       };
 
+      // Debug log
+      console.log('🔐 Login attempt:', { email, deviceInfo });
+
       // Service xử lý validation, authentication, và tạo tokens
       const result = await authServices.login(email, password, deviceInfo);
+      
+      console.log('✅ Login successful for:', email);
 
       // Set refresh token trong HTTP-only cookie
       res.cookie("refreshToken", result.tokens.refreshToken, {
@@ -51,6 +56,11 @@ const AuthController = {
 
       
     } catch (error) {
+      console.error('❌ Login error:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       next(error);
     }
   },
