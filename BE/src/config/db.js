@@ -20,19 +20,31 @@ require('dotenv').config();
 /**
  * PostgreSQL connection configuration
  * Uses environment variables for security and flexibility
+ * Supports both individual credentials and DATABASE_URL (for Supabase)
  */
-const config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    max: 10, // Maximum number of connections in pool
-    min: 0, // Minimum number of connections in pool
-    idleTimeoutMillis: 30000, // Connection timeout in milliseconds
-    connectionTimeoutMillis: 2000, // Connection attempt timeout
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-};
+const config = process.env.DATABASE_URL 
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        },
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+    }
+    : {
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        port: parseInt(process.env.DB_PORT, 10) || 5432,
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+    };
 
 // Global connection pool instance
 let pool = null;

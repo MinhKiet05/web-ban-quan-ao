@@ -1,53 +1,1095 @@
-# Fashion Store Database Documentation
+# 📚 Tài Liệu Database - Fashion Store
 
-## 📋 Tổng Quan
+## 📋 Mục Lục
 
-**Database**: Fashion Store  
-**Platform**: PostgreSQL  
-**Architecture**: Separated Users & Accounts  
-**Created**: 2026-02-13  
-**Total Tables**: 19  
-**Total Views**: 3  
-**Version**: 1.0
+1. [Tổng Quan](#-tổng-quan)
+2. [Kiến Trúc Database](#-kiến-trúc-database)
+3. [Custom Types (ENUMS)](#-custom-types-enums)
+4. [Cấu Trúc Bảng](#-cấu-trúc-bảng)
+5. [Relationships (Quan Hệ)](#-relationships-quan-hệ)
+6. [Triggers & Functions](#-triggers--functions)
+7. [Views](#-views)
+8. [Indexes](#-indexes)
+9. [Hướng Dẫn Setup](#-hướng-dẫn-setup)
+10. [Best Practices](#-best-practices)
 
-### Kiến Trúc Hệ Thống
+---
 
-Database được thiết kế với kiến trúc tách biệt giữa:
-- **Users Table**: Lưu thông tin profile và dữ liệu nghiệp vụ
-- **Accounts Table**: Xử lý xác thực (email/phone/OAuth)
-- **Sessions Table**: Quản lý phiên đăng nhập
+## 🎯 Tổng Quan
+
+### Thông Tin Cơ Bản
+
+| Thuộc tính | Giá trị |
+|------------|---------|
+| **Database Name** | Fashion Store Database |
+| **DBMS** | PostgreSQL |
+| **Version** | 1.0 |
+| **Created Date** | 2026-02-13 |
+| **Total Tables** | 19 bảng chính |
+| **Total Views** | 3 views |
+| **Total Functions** | 7 functions |
+| **Total Triggers** | 25+ triggers |
+
+### Mục Đích
+
+Database này được thiết kế để phục vụ cho một hệ thống thương mại điện tử bán quần áo (Fashion E-commerce), bao gồm đầy đủ các chức năng:
+
+- ✅ Quản lý người dùng và xác thực (Multi-method authentication)
+- ✅ Quản lý sản phẩm và biến thể (Product catalog với variants)
+- ✅ Quản lý đơn hàng và thanh toán
+- ✅ Quản lý giỏ hàng
+- ✅ Quản lý vận chuyển
+- ✅ Hệ thống đánh giá sản phẩm
+- ✅ Quản lý voucher và khuyến mãi
+- ✅ Hệ thống trả hàng/hoàn tiền
+- ✅ Loyalty program (điểm thưởng)
+
+---
+
+## 🏗️ Kiến Trúc Database
+
+### Kiến Trúc Tách Biệt: Users + Accounts
+
+Database sử dụng kiến trúc **tách biệt** giữa thông tin người dùng và xác thực:
+
+```
+┌─────────────────────┐
+│      USERS          │  ← Profile & Business Data
+│  - ID               │
+│  - Full Name        │
+│  - Email/Phone      │
+│  - Role, Tier       │
+│  - Loyalty Points   │
+└──────────┬──────────┘
+           │
+           │ 1:N
+           ▼
+┌─────────────────────┐
+│     ACCOUNTS        │  ← Authentication Data
+│  - User ID (FK)     │
+│  - Account Type     │
+│  - Password Hash    │
+│  - OAuth Data       │
+└──────────┬──────────┘
+           │
+           │ 1:N
+           ▼
+┌─────────────────────┐
+│     SESSIONS        │  ← Active Sessions
+│  - Session Token    │
+│  - Refresh Token    │
+│  - Device Info      │
+└─────────────────────┘
+```
+
+**Lợi ích của kiến trúc này:**
+
+1. **Separation of Concerns**: Tách biệt dữ liệu nghiệp vụ và xác thực
+2. **Multi-auth Support**: Hỗ trợ nhiều phương thức đăng nhập (email, phone, OAuth)
+3. **Security**: Dữ liệu nhạy cảm (password) tách biệt khỏi profile
+4. **Flexibility**: Một user có thể có nhiều account (VD: cả email lẫn OAuth)
 
 ---
 
 ## 🎯 Custom Types (ENUMS)
 
-### user_role
-Vai trò người dùng trong hệ thống.
+### 1. user_role
+Vai trò người dùng trong hệ thống
+
+| Value | Mô tả | Quyền hạn |
+|-------|-------|-----------|
+| `customer` | Khách hàng | Mua hàng, đánh giá sản phẩm |
+| `staff` | Nhân viên | Xử lý đơn hàng, hỗ trợ KH |
+| `admin` | Quản trị viên | Quản lý sản phẩm, đơn hàng |
+| `super_admin` | Quản trị viên cấp cao | Full quyền hệ thống |
+
+### 2. user_tier
+Hạng khách hàng (Loyalty tier)
+
+| Value | Mô tả | Điều kiện |
+|-------|-------|-----------|
+| `normal` | Khách hàng thường | Mặc định |
+| `silver` | Hạng bạc | Tổng chi tiêu > X |
+| `gold` | Hạng vàng | Tổng chi tiêu > Y |
+| `platinum` | Hạng bạch kim | Tổng chi tiêu > Z |
+| `vip` | VIP | Khách hàng đặc biệt |
+
+### 3. account_type
+Phương thức xác thực
 
 | Value | Mô tả |
 |-------|-------|
-| `customer` | Khách hàng |
-| `admin` | Quản trị viên |
-| `staff` | Nhân viên |
-| `super_admin` | Quản trị viên cấp cao |
+| `email` | Đăng ký bằng email + password |
+| `phone` | Đăng ký bằng số điện thoại + password |
+| `oauth` | Đăng nhập qua OAuth (Google, Facebook...) |
 
-### user_tier
-Hạng khách hàng dựa trên lịch sử mua hàng.
-
-| Value | Mô tả |
-|-------|-------|
-| `normal` | Khách hàng thường |
-| `silver` | Hạng bạc |
-| `gold` | Hạng vàng |
-| `platinum` | Hạng bạch kim |
-| `vip` | Khách hàng VIP |
-
-### account_type
-Phương thức xác thực tài khoản.
+### 4. oauth_provider_enum
+Các nhà cung cấp OAuth
 
 | Value | Mô tả |
 |-------|-------|
-| `email` | Xác thực qua email |
+| `google` | Google OAuth |
+| `facebook` | Facebook Login |
+| `apple` | Sign in with Apple |
+| `twitter` | Twitter OAuth |
+
+### 5. product_status
+Trạng thái sản phẩm
+
+| Value | Mô tả |
+|-------|-------|
+| `draft` | Nháp, chưa công khai |
+| `active` | Đang hoạt động, hiển thị |
+| `archived` | Đã lưu trữ |
+| `out_of_stock` | Hết hàng |
+
+### 6. order_status
+Trạng thái đơn hàng
+
+| Value | Mô tả |
+|-------|-------|
+| `pending` | Chờ xác nhận |
+| `confirmed` | Đã xác nhận |
+| `packing` | Đang đóng gói |
+| `shipped` | Đã giao cho vận chuyển |
+| `delivered` | Đã giao hàng |
+| `completed` | Hoàn thành |
+| `cancelled` | Đã hủy |
+| `refunded` | Đã hoàn tiền |
+
+### 7. payment_method
+Phương thức thanh toán
+
+| Value | Mô tả |
+|-------|-------|
+| `cod` | Thanh toán khi nhận hàng |
+| `vnpay` | VNPay |
+| `momo` | MoMo |
+| `zalopay` | ZaloPay |
+| `bank_transfer` | Chuyển khoản ngân hàng |
+| `credit_card` | Thẻ tín dụng |
+| `debit_card` | Thẻ ghi nợ |
+
+### 8. payment_status
+Trạng thái thanh toán
+
+| Value | Mô tả |
+|-------|-------|
+| `pending` | Chờ thanh toán |
+| `paid` | Đã thanh toán |
+| `failed` | Thanh toán thất bại |
+| `refunded` | Đã hoàn tiền |
+| `partially_refunded` | Hoàn tiền một phần |
+
+### 9. shipment_status
+Trạng thái vận chuyển
+
+| Value | Mô tả |
+|-------|-------|
+| `preparing` | Đang chuẩn bị |
+| `picked_up` | Đã lấy hàng |
+| `in_transit` | Đang vận chuyển |
+| `out_for_delivery` | Đang giao hàng |
+| `delivered` | Đã giao |
+| `returned` | Đã trả lại |
+| `failed` | Giao hàng thất bại |
+
+### 10. voucher_type
+Loại voucher
+
+| Value | Mô tả |
+|-------|-------|
+| `percent` | Giảm theo % |
+| `fixed` | Giảm số tiền cố định |
+| `free_ship` | Miễn phí vận chuyển |
+
+### 11. return_status
+Trạng thái yêu cầu trả hàng
+
+| Value | Mô tả |
+|-------|-------|
+| `pending` | Chờ xử lý |
+| `approved` | Đã chấp nhận |
+| `rejected` | Đã từ chối |
+| `processing` | Đang xử lý |
+| `refunded` | Đã hoàn tiền |
+| `completed` | Hoàn tất |
+
+---
+
+## 📊 Cấu Trúc Bảng
+
+### Nhóm 1: Authentication & User Management
+
+#### 1. `users` - Thông Tin Người Dùng
+
+**Mục đích**: Lưu trữ thông tin profile và dữ liệu nghiệp vụ của người dùng
+
+**Các trường chính:**
+
+| Column | Type | Constraints | Mô tả |
+|--------|------|-------------|-------|
+| `id` | VARCHAR(50) | PRIMARY KEY | ID người dùng |
+| `full_name` | VARCHAR(100) | | Họ và tên |
+| `avatar_url` | TEXT | | URL avatar |
+| `date_of_birth` | DATE | | Ngày sinh |
+| `gender` | VARCHAR(10) | | Giới tính |
+| `email` | VARCHAR(150) | | Email liên hệ |
+| `phone` | VARCHAR(15) | | Số điện thoại |
+| `role` | user_role | NOT NULL, DEFAULT 'customer' | Vai trò |
+| `tier` | user_tier | NOT NULL, DEFAULT 'normal' | Hạng khách hàng |
+| `loyalty_points` | INT | DEFAULT 0, >= 0 | Điểm tích lũy |
+| `total_spent` | DECIMAL(15,2) | DEFAULT 0, >= 0 | Tổng chi tiêu |
+| `total_orders` | INT | DEFAULT 0, >= 0 | Tổng số đơn hàng |
+| `is_active` | BOOLEAN | DEFAULT TRUE | Tài khoản còn hoạt động? |
+| `is_verified` | BOOLEAN | DEFAULT FALSE | Đã xác thực? |
+| `is_blocked` | BOOLEAN | DEFAULT FALSE | Bị chặn? |
+
+**Business Logic:**
+- Constraint: Phải có ít nhất email HOẶC phone
+- `loyalty_points`: Tích lũy từ mua hàng
+- `tier`: Tự động nâng cấp dựa trên `total_spent`
+
+#### 2. `accounts` - Thông Tin Xác Thực
+
+**Mục đích**: Quản lý credentials và phương thức đăng nhập
+
+**Các trường chính:**
+
+| Column | Type | Constraints | Mô tả |
+|--------|------|-------------|-------|
+| `id` | VARCHAR(50) | PRIMARY KEY | ID account |
+| `user_id` | VARCHAR(50) | FK → users | Người dùng sở hữu |
+| `account_type` | account_type | NOT NULL | Loại tài khoản |
+| `identifier` | VARCHAR(255) | NOT NULL | Email/phone/OAuth ID |
+| `password_hash` | VARCHAR(255) | | Password đã hash |
+| `is_verified` | BOOLEAN | DEFAULT FALSE | Đã xác thực? |
+| `verification_token` | VARCHAR(255) | | Token xác thực email |
+| `verification_token_expires_at` | TIMESTAMP | | Hết hạn token |
+| `reset_token` | VARCHAR(255) | | Token reset password |
+| `oauth_provider` | oauth_provider_enum | | Nhà cung cấp OAuth |
+| `oauth_provider_user_id` | VARCHAR(255) | | User ID từ OAuth |
+| `failed_login_attempts` | INT | DEFAULT 0 | Số lần đăng nhập sai |
+| `locked_until` | TIMESTAMP | | Khóa tài khoản đến |
+| `last_login_at` | TIMESTAMP | | Lần đăng nhập cuối |
+
+**Business Logic:**
+- Unique constraint: (account_type, identifier)
+- OAuth account PHẢI có `oauth_provider` và `oauth_provider_user_id`
+- Non-OAuth account PHẢI có `password_hash`
+- Security: Lock account sau N lần đăng nhập sai
+
+#### 3. `sessions` - Quản Lý Phiên
+
+**Mục đ ích**: Lưu trữ và quản lý các phiên đăng nhập
+
+| Column | Type | Constraints | Mô tả |
+|--------|------|-------------|-------|
+| `id` | VARCHAR(50) | PRIMARY KEY | ID session |
+| `user_id` | VARCHAR(50) | FK → users | User đang đăng nhập |
+| `account_id` | VARCHAR(50) | FK → accounts | Account được dùng |
+| `session_token` | VARCHAR(500) | UNIQUE, NOT NULL | JWT access token |
+| `refresh_token` | VARCHAR(500) | UNIQUE | Refresh token |
+| `device_type` | VARCHAR(50) | | mobile/tablet/desktop |
+| `ip_address` | VARCHAR(45) | | IP đăng nhập |
+| `user_agent` | TEXT | | Thông tin trình duyệt |
+| `is_active` | BOOLEAN | DEFAULT TRUE | Session còn hoạt động? |
+| `expires_at` | TIMESTAMP | NOT NULL | Thời gian hết hạn |
+
+#### 4. `addresses` - Địa Chỉ Giao Hàng
+
+**Mục đích**: Lưu địa chỉ giao hàng của khách hàng
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID địa chỉ |
+| `user_id` | VARCHAR(50) | FK → users |
+| `recipient_name` | VARCHAR(100) | Tên người nhận |
+| `recipient_phone` | VARCHAR(15) | SĐT người nhận |
+| `province` | VARCHAR(100) | Tỉnh/Thành phố |
+| `district` | VARCHAR(100) | Quận/Huyện |
+| `ward` | VARCHAR(100) | Phường/Xã |
+| `street_address` | TEXT | Số nhà, tên đường |
+| `address_type` | VARCHAR(20) | home/office/other |
+| `is_default` | BOOLEAN | Địa chỉ mặc định? |
+
+**Business Logic:**
+- Trigger đảm bảo mỗi user chỉ có 1 địa chỉ default
+
+---
+
+### Nhóm 2: Product Management
+
+#### 5. `categories` - Danh Mục Sản Phẩm
+
+**Mục đích**: Quản lý danh mục phân cấp
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID danh mục |
+| `parent_id` | VARCHAR(50) | FK → categories (Self-reference) |
+| `name` | VARCHAR(100) | Tên danh mục |
+| `slug` | VARCHAR(120) | URL-friendly slug |
+| `level` | INT | Cấp độ (0=root, 1=child...) |
+| `path` | VARCHAR(500) | Materialized path (VD: "1/5/12") |
+| `sort_order` | INT | Thứ tự hiển thị |
+| `is_active` | BOOLEAN | Đang hoạt động? |
+
+**Ví dụ Hierarchical Structure:**
+```
+Thời Trang Nam (id=1, level=0, path="1")
+├── Áo Nam (id=5, level=1, path="1/5")
+│   ├── Áo Thun (id=12, level=2, path="1/5/12")
+│   └── Áo Sơ Mi (id=13, level=2, path="1/5/13")
+└── Quần Nam (id=6, level=1, path="1/6")
+```
+
+#### 6. `products` - Sản Phẩm
+
+**Mục đích**: Lưu thông tin cơ bản của sản phẩm
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID sản phẩm |
+| `category_id` | VARCHAR(50) | FK → categories |
+| `name` | VARCHAR(255) | Tên sản phẩm |
+| `slug` | VARCHAR(300) | URL slug |
+| `sku` | VARCHAR(100) | Mã SKU |
+| `brand` | VARCHAR(100) | Thương hiệu |
+| `base_price` | DECIMAL(12,2) | Giá cơ bản |
+| `description` | TEXT | Mô tả chi tiết |
+| `status` | product_status | Trạng thái |
+| `view_count` | INT | Số lượt xem |
+| `sold_count` | INT | Số lượng đã bán |
+| `avg_rating` | DECIMAL(3,2) | Điểm đánh giá TB |
+| `review_count` | INT | Số đánh giá |
+| `is_featured` | BOOLEAN | Sản phẩm nổi bật? |
+| `published_at` | TIMESTAMP | Ngày xuất bản |
+
+**Business Logic:**
+- `avg_rating` tự động tính từ bảng `reviews` (trigger)
+- `sold_count` tự động cập nhật khi đơn hàng completed
+
+#### 7. `product_variants` - Biến Thể Sản Phẩm
+
+**Mục đích**: Quản lý các biến thể (size, màu) của sản phẩm
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID variant |
+| `product_id` | VARCHAR(50) | FK → products |
+| `sku` | VARCHAR(100) | SKU riêng của variant |
+| `size` | VARCHAR(20) | Size (S, M, L, XL...) |
+| `color` | VARCHAR(50) | Màu sắc |
+| `price` | DECIMAL(12,2) | Giá bán |
+| `sale_price` | DECIMAL(12,2) | Giá khuyến mãi |
+| `stock_qty` | INT | Số lượng tồn kho |
+| `reserved_qty` | INT | Số lượng đang giữ (trong đơn hàng) |
+| `sold_qty` | INT | Số lượng đã bán |
+| `is_active` | BOOLEAN | Còn bán? |
+| `is_default` | BOOLEAN | Variant mặc định? |
+
+**Ví dụ:**
+```
+Sản phẩm: Áo Thun Nam Basic
+├── Variant 1: Size M, Màu Đen, Giá 199k
+├── Variant 2: Size M, Màu Trắng, Giá 199k
+├── Variant 3: Size L, Màu Đen, Giá 209k
+└── Variant 4: Size L, Màu Trắng, Giá 209k
+```
+
+**Business Logic:**
+- Unique constraint: (product_id, size, color)
+- `stock_qty`: Số lượng thực tế có sẵn
+- `reserved_qty`: Số lượng đang trong  giỏ hàng/đơn hàng chưa hoàn thành
+- Available stock = `stock_qty - reserved_qty`
+
+#### 8. `product_images` - Hình Ảnh Sản Phẩm
+
+**Mục đích**: Lưu trữ hình ảnh của sản phẩm và variants
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID hình ảnh |
+| `product_id` | VARCHAR(50) | FK → products |
+| `variant_id` | VARCHAR(50) | FK → product_variants (optional) |
+| `url` | TEXT | URL hình ảnh |
+| `image_type` | VARCHAR(20) | gallery/thumbnail/detail |
+| `is_primary` | BOOLEAN | Hình đại diện? |
+| `sort_order` | INT | Thứ tự hiển thị |
+
+---
+
+### Nhóm 3: Shopping & Orders
+
+#### 9. `carts` - Giỏ Hàng
+
+**Mục đích**: Quản lý giỏ hàng của khách
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID giỏ hàng |
+| `user_id` | VARCHAR(50) | FK → users (null nếu guest) |
+| `session_id` | VARCHAR(100) | Session ID cho guest |
+| `expires_at` | TIMESTAMP | Hết hạn |
+
+**Business Logic:**
+- Constraint: Phải có `user_id` HOẶC `session_id`
+- Guest cart sử dụng `session_id`
+- Khi guest đăng nhập → merge cart vào user cart
+
+#### 10. `cart_items` - Sản Phẩm Trong Giỏ
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID cart item |
+| `cart_id` | VARCHAR(50) | FK → carts |
+| `variant_id` | VARCHAR(50) | FK → product_variants |
+| `quantity` | INT | Số lượng |
+| `added_price` | DECIMAL(12,2) | Giá lúc thêm vào |
+
+**Business Logic:**
+- Unique: (cart_id, variant_id) - không trùng variant trong 1 giỏ
+- `added_price`: Snapshot giá để phát hiện thay đổi
+
+#### 11. `orders` - Đơn Hàng
+
+**Mục đích**: Quản lý đơn hàng
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID đơn hàng |
+| `order_code` | VARCHAR(20) | Mã đơn hàng (unique) |
+| `user_id` | VARCHAR(50) | FK → users |
+| `voucher_id` | VARCHAR(50) | FK → vouchers |
+| `status` | order_status | Trạng thái |
+| `subtotal` | DECIMAL(12,2) | Tổng tiền hàng |
+| `discount_amount` | DECIMAL(12,2) | Số tiền giảm giá |
+| `shipping_fee` | DECIMAL(12,2) | Phí vận chuyển |
+| `tax_amount` | DECIMAL(12,2) | Thuế |
+| `total` | DECIMAL(12,2) | Tổng cộng |
+| `points_earned` | INT | Điểm tích lũy được |
+| `points_used` | INT | Điểm đã dùng |
+| `shipping_*` | Various | Thông tin địa chỉ giao hàng |
+| `*_at` | TIMESTAMP | Timestamps các trạng thái |
+
+**Business Logic:**
+- Tự động reserve stock khi tạo đơn (trigger)
+- Cập nhật stock khi order completed (trigger)
+- Tính điểm thưởng và cập nhật user tier
+
+#### 12. `order_items` - Chi Tiết Đơn Hàng
+
+**Mục đích**: Lưu các sản phẩm trong đơn hàng
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID order item |
+| `order_id` | VARCHAR(50) | FK → orders |
+| `variant_id` | VARCHAR(50) | FK → product_variants |
+| `product_name` | VARCHAR(255) | Snapshot: Tên sản phẩm |
+| `sku` | VARCHAR(100) | Snapshot: SKU |
+| `size` | VARCHAR(20) | Snapshot: Size |
+| `color` | VARCHAR(50) | Snapshot: Màu |
+| `unit_price` | DECIMAL(12,2) | Giá tại thời điểm mua |
+| `quantity` | INT | Số lượng |
+| `line_total` | DECIMAL(12,2) | Thành tiền |
+
+**Tại sao cần Snapshot?**
+- Giá và thông tin sản phẩm có thể thay đổi
+- Cần lưu lại chính xác thông tin tại thời điểm mua
+
+---
+
+### Nhóm 4: Payment & Shipping
+
+#### 13. `payments` - Thanh Toán
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID payment |
+| `order_id` | VARCHAR(50) | FK → orders |
+| `method` | payment_method | Phương thức |
+| `status` | payment_status | Trạng thái |
+| `amount` | DECIMAL(12,2) | Số tiền |
+| `transaction_id` | VARCHAR(255) | Mã GD từ payment gateway |
+| `gateway_response` | JSONB | Response từ gateway |
+| `refund_amount` | DECIMAL(12,2) | Số tiền đã hoàn |
+| `paid_at` | TIMESTAMP | Thời gian thanh toán |
+
+#### 14. `shipments` - Vận Chuyển
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID shipment |
+| `order_id` | VARCHAR(50) | FK → orders |
+| `carrier` | VARCHAR(50) | Đơn vị vận chuyển |
+| `tracking_code` | VARCHAR(100) | Mã vận đơn |
+| `status` | shipment_status | Trạng thái |
+| `estimated_delivery_date` | DATE | Dự kiến giao |
+| `actual_delivery_date` | DATE | Thực tế giao |
+| `cod_amount` | DECIMAL(12,2) | Tiền COD |
+| `*_at` | TIMESTAMP | Timestamps các sự kiện |
+
+---
+
+### Nhóm 5: Promotions & Reviews
+
+#### 15. `vouchers` - Mã Giảm Giá
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID voucher |
+| `code` | VARCHAR(50) | Mã voucher (unique) |
+| `type` | voucher_type | Loại giảm giá |
+| `value` | DECIMAL(12,2) | Giá trị giảm |
+| `min_order_value` | DECIMAL(12,2) | Giá trị đơn tối thiểu |
+| `max_discount_amount` | DECIMAL(12,2) | Giảm tối đa |
+| `usage_limit` | INT | Giới hạn số lần dùng |
+| `usage_limit_per_user` | INT | Giới hạn mỗi user |
+| `used_count` | INT | Đã dùng bao nhiêu lần |
+| `min_customer_tier` | user_tier | Hạng KH tối thiểu |
+| `start_date` | TIMESTAMP | Bắt đầu |
+| `end_date` | TIMESTAMP | Kết thúc |
+
+**Ví dụ:**
+```sql
+-- Voucher giảm 10%
+type = 'percent', value = 10
+
+-- Voucher giảm 50k
+type = 'fixed', value = 50000
+
+-- Free ship
+type = 'free_ship', value = 0
+```
+
+#### 16. `voucher_usage` - Lịch Sử Dùng Voucher
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `voucher_id` | VARCHAR(50) | FK → vouchers |
+| `user_id` | VARCHAR(50) | FK → users |
+| `order_id` | VARCHAR(50) | FK → orders |
+| `discount_amount` | DECIMAL(12,2) | Số tiền đã giảm |
+| `used_at` | TIMESTAMP | Thời gian dùng |
+
+#### 17. `reviews` - Đánh Giá Sản Phẩm
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID review |
+| `user_id` | VARCHAR(50) | FK → users |
+| `product_id` | VARCHAR(50) | FK → products |
+| `order_item_id` | VARCHAR(50) | FK → order_items |
+| `rating` | SMALLINT | Điểm (1-5) |
+| `title` | VARCHAR(200) | Tiêu đề |
+| `content` | TEXT | Nội dung |
+| `images` | JSONB | Hình ảnh đính kèm |
+| `is_verified_purchase` | BOOLEAN | Mua hàng xác thực? |
+| `is_approved` | BOOLEAN | Đã duyệt? |
+| `helpful_count` | INT | Số người thấy hữu ích |
+| `admin_reply` | TEXT | Phản hồi từ admin |
+
+**Business Logic:**
+- Unique: (user_id, order_item_id) - mỗi order item chỉ review 1 lần
+- Trigger tự động cập nhật `avg_rating` và `review_count` của product
+
+#### 18. `return_requests` - Yêu Cầu Trả Hàng
+
+| Column | Type | Mô tả |
+|--------|------|-------|
+| `id` | VARCHAR(50) | ID request |
+| `order_id` | VARCHAR(50) | FK → orders |
+| `user_id` | VARCHAR(50) | FK → users |
+| `return_items` | JSONB | Danh sách sản phẩm trả |
+| `reason_category` | VARCHAR(50) | Loại lý do |
+| `reason_detail` | TEXT | Chi tiết lý do |
+| `images` | JSONB | Hình ảnh chứng minh |
+| `status` | return_status | Trạng thái |
+| `refund_amount` | DECIMAL(12,2) | Số tiền hoàn |
+| `admin_note` | TEXT | Ghi chú từ admin |
+
+---
+
+## 🔗 Relationships (Quan Hệ)
+
+### Entity Relationship Diagram (ERD) Simplified
+
+```
+users (1) ←→ (N) accounts
+users (1) ←→ (N) sessions
+users (1) ←→ (N) addresses
+users (1) ←→ (N) orders
+users (1) ←→ (N) reviews
+users (1) ←→ (1) carts
+
+categories (1) ←→ (N) products
+categories (1) ←→ (N) categories (self-reference - hierarchical)
+
+products (1) ←→ (N) product_variants
+products (1) ←→ (N) product_images
+products (1) ←→ (N) reviews
+
+orders (1) ←→ (N) order_items
+orders (1) ←→ (1) payments
+orders (1) ←→ (1) shipments
+orders (1) ←→ (N) return_requests
+
+product_variants (1) ←→ (N) cart_items
+product_variants (1) ←→ (N) order_items
+
+vouchers (1) ←→ (N) orders
+vouchers (1) ←→ (N) voucher_usage
+
+carts (1) ←→ (N) cart_items
+```
+
+### Các Quan Hệ Chính
+
+#### 1. User Authentication Flow
+```
+User → Accounts (1:N) → Sessions (1:N)
+```
+Một user có thể có nhiều accounts (email + OAuth), mỗi account có nhiều sessions.
+
+#### 2. Product Hierarchy
+```
+Category → Products (1:N) → Variants (1:N) → Images (1:N)
+```
+
+#### 3. Order Lifecycle
+```
+User → Cart → Order → Order Items
+                  ↓
+            [Payment, Shipment, Reviews, Returns]
+```
+
+---
+
+## ⚙️ Triggers & Functions
+
+### 1. `update_updated_at_column()`
+**Mục đích**: Tự động cập nhật trường `updated_at` khi có thay đổi
+
+**Áp dụng cho**: Tất cả bảng có cột `updated_at`
+
+```sql
+BEFORE UPDATE ON [table]
+→ SET updated_at = CURRENT_TIMESTAMP
+```
+
+### 2. `update_product_rating()`
+**Mục đích**: Cap nhật `avg_rating` và `review_count` của sản phẩm
+
+**Trigger**: Sau khi INSERT/UPDATE/DELETE trên bảng `reviews`
+
+**Logic:**
+```sql
+UPDATE products
+SET 
+  avg_rating = AVG(rating) FROM approved reviews
+  review_count = COUNT(*) FROM approved reviews
+WHERE product_id = [current_product]
+```
+
+### 3. `check_stock_availability()`
+**Mục đích**: Kiểm tra tồn kho trước khi tạo order_item
+
+**Trigger**: BEFORE INSERT ON `order_items`
+
+**Logic:**
+```sql
+available_stock = stock_qty - reserved_qty
+IF available_stock < requested_quantity THEN
+  RAISE EXCEPTION 'Insufficient stock'
+END IF
+```
+
+### 4. `reserve_stock()`
+**Mục đích**: Giữ hàng khi tạo đơn
+
+**Trigger**: AFTER INSERT ON `orders`
+
+**Logic:**
+```sql
+UPDATE product_variants
+SET reserved_qty = reserved_qty + order_item.quantity
+FOR each order_item in new_order
+```
+
+### 5. `update_stock_on_status_change()`
+**Mục đích**: Cập nhật stock khi trạng thái đơn hàng thay đổi
+
+**Trigger**: AFTER UPDATE ON `orders` (khi status thay đổi)
+
+**Logic:**
+
+**Khi order COMPLETED:**
+```sql
+-- Chuyển reserved → sold, giảm stock
+reserved_qty -= quantity
+sold_qty += quantity
+stock_qty -= quantity
+
+-- Cập nhật sold_count của product
+product.sold_count += total_quantity
+
+-- Thưởng điểm cho user
+user.loyalty_points += order.points_earned
+user.total_spent += order.total
+user.total_orders += 1
+```
+
+**Khi order CANCELLED:**
+```sql
+-- Trả lại stock
+reserved_qty -= quantity
+```
+
+### 6. `increment_voucher_usage()`
+**Mục đích**: Tăng số lần dùng voucher
+
+**Trigger**: AFTER INSERT ON `orders` (khi có voucher_id)
+
+**Logic:**
+```sql
+UPDATE vouchers
+SET used_count = used_count + 1
+
+INSERT INTO voucher_usage (...)
+```
+
+### 7. `ensure_one_default_address()`
+**Mục đích**: Đảm bảo mỗi user chỉ có 1 địa chỉ default
+
+**Trigger**: BEFORE INSERT/UPDATE ON `addresses` (khi is_default = TRUE)
+
+**Logic:**
+```sql
+IF new.is_default = TRUE THEN
+  UPDATE addresses
+  SET is_default = FALSE
+  WHERE user_id = new.user_id AND id != new.id
+END IF
+```
+
+---
+
+## 👁️ Views
+
+### 1. `v_users_with_accounts`
+**Mục đích**: Lấy thông tin user kèm tất cả accounts
+
+```sql
+SELECT 
+  users.*,
+  json_agg(accounts info) as accounts
+FROM users
+LEFT JOIN accounts
+GROUP BY users.id
+```
+
+**Use case**: Dashboard admin, hiển thị user có bao nhiêu phương thức đăng nhập
+
+### 2. `v_product_catalog`
+**Mục đích**: View catalog sản phẩm với thông tin đầy đủ
+
+```sql
+SELECT 
+  products.*,
+  category info,
+  primary_image,
+  variant_count,
+  min_price,
+  max_price,
+  total_stock
+FROM products
+WHERE status = 'active'
+```
+
+**Use case**: Trang danh sách sản phẩm, API  product listing
+
+### 3. `v_order_summary`
+**Mục đích**: Tổng hợp thông tin đơn hàng
+
+```sql
+SELECT 
+  orders.*,
+  customer info,
+  payment info,
+  shipment info,
+  item_count,
+  total_quantity
+FROM orders
+JOIN users, payments, shipments
+```
+
+**Use case**: Dashboard quản lý đơn hàng, tracking page
+
+---
+
+## 🔍 Indexes
+
+### Strategy: Index cho Performance
+
+#### 1. Primary Keys
+- Tất cả bảng đều có PK index (tự động)
+
+#### 2. Foreign Keys
+```sql
+-- User relationships
+idx_accounts_user_id
+idx_sessions_user_id
+idx_addresses_user_id
+idx_orders_user_id
+
+-- Product relationships
+idx_products_category_id
+idx_variants_product_id
+idx_images_product_id
+```
+
+#### 3. Unique Constraints
+```sql
+-- Unique indexes
+idx_users_email (WHERE email IS NOT NULL)
+idx_users_phone (WHERE phone IS NOT NULL)
+idx_products_slug
+idx_vouchers_code
+idx_orders_order_code
+```
+
+#### 4. Search & Filter
+```sql
+-- Products
+idx_products_status
+idx_products_brand
+idx_products_is_featured
+idx_products_avg_rating DESC
+idx_products_sold_count DESC
+idx_products_published_at DESC
+
+-- Orders
+idx_orders_status
+idx_orders_created_at DESC
+idx_orders_total DESC
+
+-- Reviews
+idx_reviews_rating
+idx_reviews_created_at DESC
+idx_reviews_is_approved
+```
+
+#### 5. Session & Token
+```sql
+idx_sessions_session_token
+idx_sessions_refresh_token
+idx_sessions_expires_at
+idx_accounts_verification_token
+idx_accounts_reset_token
+```
+
+### Composite Indexes
+
+```sql
+-- Cart
+idx_carts_user_id WHERE user_id IS NOT NULL
+idx_carts_session_id WHERE session_id IS NOT NULL
+
+-- Addresses
+idx_addresses_is_default (user_id, is_default)
+
+-- Variants
+idx_variants_is_default (product_id, is_default)
+
+-- Images
+idx_images_is_primary (product_id, is_primary)
+```
+
+---
+
+## 🚀 Hướng Dẫn Setup
+
+### Bước 1: Chuẩn Bị
+
+**Requirements:**
+- PostgreSQL 12+
+- Database client (psql, pgAdmin, DBeaver...)
+
+### Bước 2: Tạo Database
+
+```sql
+CREATE DATABASE fashion_store;
+\c fashion_store
+```
+
+### Bước 3: Chạy Script
+
+```bash
+psql -U postgres -d fashion_store -f script.sql
+```
+
+Hoặc trong psql:
+```sql
+\i /path/to/script.sql
+```
+
+### Bước 4: Verify
+
+```sql
+-- Check tables
+\dt
+
+-- Check views
+\dv
+
+-- Check functions
+\df
+
+-- Check triggers
+SELECT tgname FROM pg_trigger;
+```
+
+### Bước 5: Test Sample Data
+
+Script đã include sample data:
+- 5 users mẫu
+- 5 accounts tương ứng
+
+Verify:
+```sql
+SELECT * FROM v_users_with_accounts;
+```
+
+---
+
+## ✅ Best Practices
+
+### 1. ID Generation
+```javascript
+// Sử dụng custom ID generator
+const userId = generateId('usr'); // usr001, usr002...
+const orderId = generateId('ord'); // ord001, ord002...
+```
+
+### 2. Password Hashing
+```javascript
+const bcrypt = require('bcrypt');
+const hash = await bcrypt.hash(password, 10);
+```
+
+### 3. Transaction cho Orders
+```sql
+BEGIN;
+  -- Insert order
+  -- Insert order_items
+  -- Update stock (via trigger)
+  -- Insert payment
+COMMIT;
+```
+
+### 4. Handling Stock
+```javascript
+// Always check available stock
+const available = stock_qty - reserved_qty;
+if (available < requested_qty) {
+  throw new Error('Out of stock');
+}
+```
+
+### 5. Session Management
+```javascript
+// Expire old sessions
+DELETE FROM sessions 
+WHERE expires_at < NOW() 
+OR last_activity_at < NOW() - INTERVAL '30 days';
+```
+
+### 6. Soft Delete (Optional)
+Có thể thêm `deleted_at` timestamp cho các bảng quan trọng thay vì DELETE thật:
+```sql
+UPDATE users SET deleted_at = NOW() WHERE id = ?;
+-- Query: WHERE deleted_at IS NULL
+```
+
+### 7. Caching Strategy
+Các bảng nên cache:
+- `categories` (ít thay đổi)
+- `products` (cache product list)
+- `vouchers` (active vouchers)
+
+### 8. Query Optimization
+```sql  -- BAD: N+1 query
+SELECT * FROM orders;
+-- Then for each order, query order_items
+
+-- GOOD: JOIN
+SELECT o.*, oi.* 
+FROM orders o
+LEFT JOIN order_items oi ON oi.order_id = o.id;
+```
+
+### 9. JSON Fields
+```sql
+-- Storing images in reviews
+INSERT INTO reviews (..., images) VALUES 
+(..., '["url1.jpg", "url2.jpg"]'::jsonb);
+
+-- Query JSON
+SELECT * FROM reviews 
+WHERE images @> '["url1.jpg"]'::jsonb;
+```
+
+### 10. Monitoring
+```sql
+-- Check slow queries
+SELECT query, mean_exec_time 
+FROM pg_stat_statements 
+ORDER BY mean_exec_time DESC;
+
+-- Check table sizes
+SELECT tablename, pg_size_pretty(pg_total_relation_size(tablename::text))
+FROM pg_tables 
+WHERE schemaname = 'public';
+```
+
+---
+
+## 📝 Changelog
+
+### Version 1.0 (2026-02-13)
+- ✅ Initial database schema
+- ✅ 19 tables created
+- ✅ All triggers and functions implemented
+- ✅ 3 views created
+- ✅ Sample data included
+- ✅ Full documentation completed
+
+---
+
+## 🤝 Support
+
+Nếu có vấn đề về database, vui lòng kiểm tra:
+
+1. **Errors**: Check PostgreSQL logs
+2. **Performance**: Analyze query plans với `EXPLAIN ANALYZE`
+3. **Data Integrity**: Verify constraints and triggers
+4. **Indexes**: Ensure proper indexes for your queries
+
+---
+
+## 📚 References
+
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [SQL Style Guide](https://www.sqlstyle.guide/)
+- [Database Design Best Practices](https://www.postgresql.org/docs/current/tutorial.html)
+
+---
+
+**Last Updated**: 2026-02-13  
+**Maintained by**: Development Team  
+**Database Version**: 1.0
 | `phone` | Xác thực qua số điện thoại |
 | `oauth` | Xác thực qua nhà cung cấp OAuth |
 

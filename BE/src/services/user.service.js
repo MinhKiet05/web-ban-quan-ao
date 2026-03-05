@@ -46,8 +46,8 @@ class UserService {
       }
 
       // Generate unique IDs
-      const userId = await generateUniqueId("users", "id", "usr", 3);
-      const accountId = await generateUniqueId("accounts", "id", "acc", 3);
+      const userId = await generateUniqueId("users", "id", "usr", 8);
+      const accountId = await generateUniqueId("accounts", "id", "acc", 8);
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -333,6 +333,15 @@ class UserService {
       console.error('Error logging out session:', error);
       throw error;
     }
+  }
+
+  /**
+   * Update profile người dùng
+   * @param 
+   */
+
+  async updateProfile(userProfile ){
+    
   }
 }
 
