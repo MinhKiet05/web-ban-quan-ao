@@ -31,7 +31,9 @@ const config = process.env.DATABASE_URL
         max: 10,
         min: 0,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
+        connectionTimeoutMillis: 2000,
+        // Force IPv4 to avoid ENETUNREACH error on Render
+        family: 4
     }
     : {
         user: process.env.DB_USER,
@@ -43,7 +45,8 @@ const config = process.env.DATABASE_URL
         min: 0,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
-        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        family: 4  // Force IPv4
     };
 
 // Global connection pool instance
