@@ -16,28 +16,36 @@ require('dotenv').config();
  * Optimized for Supabase connection from Render
  */
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    // Force IPv4 to avoid ENETUNREACH errors
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     ssl: {
         rejectUnauthorized: false
     },
+    // Additional configuration
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000
+    connectionTimeoutMillis: 10000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000
 });
 
 // Handle pool errors
 pool.on('error', (err) => {
-    console.error('❌ Unexpected database error:', err);
+    console.error(' Unexpected database error:', err);
 });
 
 // Test connection on startup
 pool.connect()
     .then(client => {
-        console.log('✅ Database connected successfully');
+        console.log(' Database connected successfully');
         client.release();
     })
     .catch(err => {
-        console.error('❌ Database connection failed:', err.message);
+        console.error(' Database connection failed:', err.message);
     });
 
 /*+*
@@ -59,7 +67,7 @@ const query = async (text, params) => {
         const result = await pool.query(text, params);
         return result;
     } catch (err) {
-        console.error('❌ Query error:', err);
+        console.error(' Query error:', err);
         throw err;
     }
 };
