@@ -1,5 +1,5 @@
 import styles from './ProductDetail.module.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart, addToCartAPI } from '../../redux/cart/cartSlice';
@@ -24,6 +24,7 @@ const API_BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api/products';
 export default function ProductDetail() {
     const { slug } = useParams();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -302,6 +303,31 @@ export default function ProductDetail() {
                         <button
                             className={styles.buyNow}
                             disabled={totalStock === 0}
+                            onClick={() => {
+                                const price = selectedVariant?.price ?? product.min_price ?? 0;
+                                const image = product.images?.[0] ?? null;
+                                if (selectedVariant) {
+                                    dispatch(addToCartAPI({
+                                        variantId: String(selectedVariant.id),
+                                        name: product.name,
+                                        price,
+                                        quantity,
+                                        image,
+                                        size: selectedVariant.size,
+                                        color: selectedVariant.color,
+                                    }));
+                                } else {
+                                    dispatch(addToCart({
+                                        id: String(product.id),
+                                        variantId: String(product.id),
+                                        name: product.name,
+                                        price,
+                                        quantity,
+                                        image,
+                                    }));
+                                }
+                                navigate('/checkout');
+                            }}
                         >
                             Mua ngay
                         </button>
