@@ -304,22 +304,28 @@ export default function ProductDetail() {
                             className={styles.buyNow}
                             disabled={totalStock === 0}
                             onClick={() => {
-                                const price = selectedVariant?.price ?? product.min_price ?? 0;
-                                const image = product.images?.[0] ?? null;
-                                if (selectedVariant) {
+                                const price = parseFloat(product.display_price || product.base_price);
+                                const image = product.product_images?.[0]?.url || product.primary_image?.url || '';
+                                if (localStorage.getItem('accessToken') && selectedVariant?.id) {
                                     dispatch(addToCartAPI({
-                                        variantId: String(selectedVariant.id),
-                                        name: product.name,
-                                        price,
-                                        quantity,
-                                        image,
-                                        size: selectedVariant.size,
-                                        color: selectedVariant.color,
+                                        variant_id: String(selectedVariant.id),
+                                        quantity: quantity,
+                                        added_price: price,
+                                        localItem: {
+                                            id: String(selectedVariant.id),
+                                            variantId: String(selectedVariant.id),
+                                            name: product.name,
+                                            price,
+                                            quantity,
+                                            image,
+                                            size: selectedVariant.size,
+                                            color: selectedVariant.color,
+                                        },
                                     }));
                                 } else {
                                     dispatch(addToCart({
-                                        id: String(product.id),
-                                        variantId: String(product.id),
+                                        id: String(selectedVariant?.id || product.id),
+                                        variantId: String(selectedVariant?.id || product.id),
                                         name: product.name,
                                         price,
                                         quantity,
