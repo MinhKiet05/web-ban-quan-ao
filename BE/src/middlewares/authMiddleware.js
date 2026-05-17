@@ -19,6 +19,15 @@ const { findUserById } = require("../model/user.model");
  */
 const authenticate = async (req, res, next) => {
   try {
+    // ⚠️ Kiểm tra JWT_SECRET_KEY có được setup không
+    if (!jwtSecret) {
+      console.error('❌ CRITICAL: JWT_SECRET_KEY environment variable is not set!');
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error: JWT_SECRET_KEY not configured",
+      });
+    }
+
     // Ưu tiên lấy token từ Authorization header
     let token = null;
     const authHeader = req.header("Authorization");
@@ -66,6 +75,7 @@ const authenticate = async (req, res, next) => {
     }
 
     if (error.name === "JsonWebTokenError") {
+      console.error('JWT verification failed:', error.message);
       return res.status(401).json({
         success: false,
         message: "Invalid token.",

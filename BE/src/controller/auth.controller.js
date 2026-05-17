@@ -45,7 +45,7 @@ const AuthController = {
       res.cookie("refreshToken", result.tokens.refreshToken, {
         httpOnly: true,           // Không thể truy cập từ JavaScript (chống XSS)
         secure: process.env.NODE_ENV === 'production', // HTTPS only trong production
-        sameSite: 'strict',       // Chống CSRF
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' cho cross-origin, 'lax' cho dev
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
         path: '/'
       });
@@ -114,7 +114,7 @@ const AuthController = {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/'
       });
 
@@ -173,7 +173,7 @@ const AuthController = {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/'
       });
 
