@@ -3,7 +3,6 @@
     max-width: 280px;
     background: #ffffff;
     border: 1px solid #ececec;
-    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;

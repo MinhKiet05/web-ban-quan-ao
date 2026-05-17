@@ -7,12 +7,15 @@ import ProductPage from './pages/product/ProductPage.jsx';
 import ProductDetail from './pages/productDetail/ProductDetail.jsx';
 import AboutUsPage from './pages/aboutUs/AboutUsPage.jsx';
 import CartPage from './pages/cartPage/CartPage.jsx';
+import CheckoutPage from './pages/checkoutPage/CheckoutPage.jsx';
 import Footer from './components/footer/Footer.jsx';
 import LoginPage from './pages/loginPage/LoginPage.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ProductProvider } from './context/ProductContext.jsx';
 import NotFound from './pages/notFoundPage/NotFound.jsx';
 import SearchPage from './pages/searchPage/SearchPage.jsx';
+import OrdersPage from './pages/ordersPage/OrdersPage.jsx';
+import MyPage from './pages/myPage/MyPage.jsx';
 // Cấu trúc Layout để Header và Footer luôn hiển thị ở mọi trang
 function Layout() {
   return (
@@ -40,8 +43,11 @@ function App() {
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="about-us" element={<AboutUsPage />} />
               <Route path="cart" element={<CartPage />} />
+              <Route path="checkout" element={<CheckoutPage />} />
+              <Route path="orders" element={<OrdersPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="*" element={<NotFound />} />
+              <Route path="my" element={<MyPage />} />
             </Route>
           </Routes>
         </ProductProvider>

@@ -1,6 +1,8 @@
 import styles from './ProductDetail.module.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { addToCart, addToCartAPI } from '../../redux/cart/cartSlice';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faShoppingCart,
@@ -21,6 +23,8 @@ const API_BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api/products';
 
 export default function ProductDetail() {
     const { slug } = useParams();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -263,12 +267,73 @@ export default function ProductDetail() {
                         <button
                             className={styles.addToCartBtn}
                             disabled={totalStock === 0}
+                            onClick={() => {
+                                const price = parseFloat(product.display_price || product.base_price);
+                                const image = product.product_images?.[0]?.url || product.primary_image?.url || '';
+                                if (localStorage.getItem('accessToken') && selectedVariant?.id) {
+                                    dispatch(addToCartAPI({
+                                        variant_id: String(selectedVariant.id),
+                                        quantity: quantity,
+                                        added_price: price,
+                                        localItem: {
+                                            id: String(selectedVariant.id),
+                                            variantId: String(selectedVariant.id),
+                                            name: product.name,
+                                            price,
+                                            quantity,
+                                            image,
+                                            size: selectedVariant.size,
+                                            color: selectedVariant.color,
+                                        },
+                                    }));
+                                } else {
+                                    dispatch(addToCart({
+                                        id: String(selectedVariant?.id || product.id),
+                                        variantId: String(selectedVariant?.id || product.id),
+                                        name: product.name,
+                                        price,
+                                        quantity,
+                                        image,
+                                    }));
+                                }
+                            }}
                         >
                             <FontAwesomeIcon icon={faShoppingCart} /> Thêm vào giỏ hàng
                         </button>
                         <button
                             className={styles.buyNow}
                             disabled={totalStock === 0}
+                            onClick={() => {
+                                const price = parseFloat(product.display_price || product.base_price);
+                                const image = product.product_images?.[0]?.url || product.primary_image?.url || '';
+                                if (localStorage.getItem('accessToken') && selectedVariant?.id) {
+                                    dispatch(addToCartAPI({
+                                        variant_id: String(selectedVariant.id),
+                                        quantity: quantity,
+                                        added_price: price,
+                                        localItem: {
+                                            id: String(selectedVariant.id),
+                                            variantId: String(selectedVariant.id),
+                                            name: product.name,
+                                            price,
+                                            quantity,
+                                            image,
+                                            size: selectedVariant.size,
+                                            color: selectedVariant.color,
+                                        },
+                                    }));
+                                } else {
+                                    dispatch(addToCart({
+                                        id: String(selectedVariant?.id || product.id),
+                                        variantId: String(selectedVariant?.id || product.id),
+                                        name: product.name,
+                                        price,
+                                        quantity,
+                                        image,
+                                    }));
+                                }
+                                navigate('/checkout');
+                            }}
                         >
                             Mua ngay
                         </button>

@@ -6,6 +6,8 @@ const {
   deleteProduct: deleteProductFromDB,
   findByCategory,
   updateProduct,
+  getCategoryList: getCategoryListFromDB,
+  getTotalCountForProducts: getTotalCountForProductsModel,
 } = require("../model/product.model");
 const { DB_ERRORS, VALIDATION_ERRORS } = require("../constants");
 const { createError, PRODUCT_ERRORS } = require("../constants/errors");
@@ -98,6 +100,46 @@ const deleteProduct = async (id) => {
   }
 };
 
+
+/**
+ * Hàm lấy danh sách các danh mục sản phẩm đang hoạt động từ cơ sở dữ liệu, sắp xếp theo tên danh mục tăng dần
+ * @returns danh sách các danh mục sản phẩm, mỗi danh mục bao gồm id và name
+ * @throws lỗi nếu có vấn đề trong quá trình truy vấn cơ sở dữ liệu
+ */
+const getCategoryList = async () => {
+  try {
+    const categories = await getCategoryListFromDB();
+    return categories;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getTotalCountForProducts = async () => {
+  try {
+    // Lấy tổng số lượng sản phẩm từ model
+    const totalCount = await getTotalCountForProductsModel();
+
+    // Chuyển đổi kết quả thành số nguyên và kiểm tra tính hợp lệ
+    const total = parseInt(totalCount, 10);
+
+    // Nếu kết quả không phải là một số hợp lệ, ném lỗi
+    if (isNaN(total)) {
+      throw createError(
+        DB_ERRORS.INVALID_DATA,
+        "Dữ liệu tổng số lượng sản phẩm không hợp lệ",
+      );
+    }
+
+    const pagination = total > 0 ? Math.ceil(total / 10) : 0; // Giả sử mỗi trang có 10 sản phẩm
+
+    // Trả về tổng số lượng sản phẩm
+    return { totalCount: total, pagination };
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   findManyForList,
   findProductDetailsBySlug,
@@ -106,4 +148,6 @@ module.exports = {
   deleteProduct,
   findByCategory,
   updateProduct,
+  getCategoryList,
+  getTotalCountForProducts,
 };

@@ -1,26 +1,34 @@
 import styles from './Header.module.css';
 import logo from '/logo-KHK.webp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass, faCartShopping, faUser, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faMagnifyingGlass, faCartShopping, faUser, faRightFromBracket, faCircleUser, faBox } from '@fortawesome/free-solid-svg-icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const cartItems = useSelector((state) => state.cart.items);
+    const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const cartRef = useRef(null);
+    const userDropdownRef = useRef(null);
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+                setIsUserDropdownOpen(false);
             }
         };
 
@@ -115,6 +123,9 @@ export default function Header() {
                     >
                         <Link to="/cart" className={styles.cartIcon}>
                             <FontAwesomeIcon icon={faCartShopping} />
+                            {cartCount > 0 && (
+                                <span className={styles.cartBadge}>{cartCount}</span>
+                            )}
                         </Link>
                         {isCartOpen && (
                             <div className={styles.cartPopup}>
@@ -122,17 +133,26 @@ export default function Header() {
                                     Giỏ hàng
                                 </div>
                                 <div className={styles.cartItems}>
-                                    {/* Cart items will go here */}
-                                    <div className={styles.emptyCart}>
-                                        Giỏ hàng trống
-                                    </div>
+                                    {cartItems.length === 0 ? (
+                                        <div className={styles.emptyCart}>Giỏ hàng trống</div>
+                                    ) : (
+                                        cartItems.map(item => (
+                                            <div key={item.id} className={styles.cartPopupItem}>
+                                                <img src={item.image} alt={item.name} className={styles.cartPopupImg} />
+                                                <div className={styles.cartPopupInfo}>
+                                                    <p className={styles.cartPopupName}>{item.name}</p>
+                                                    <p className={styles.cartPopupPrice}>{item.quantity} x {parseFloat(item.price).toLocaleString('vi-VN')}đ</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                                 <div className={styles.cartFooter}>
                                     <div className={styles.cartTotal}>
                                         <span>Tổng tiền:</span>
-                                        <span className={styles.totalAmount}>0đ</span>
+                                        <span className={styles.totalAmount}>{cartItems.reduce((s, i) => s + i.price * i.quantity, 0).toLocaleString('vi-VN')}đ</span>
                                     </div>
-                                    <button className={styles.checkoutButton}>
+                                    <button className={styles.checkoutButton} onClick={() => navigate('/cart')}>
                                         Tiến hành thanh toán
                                     </button>
                                 </div>
@@ -140,12 +160,40 @@ export default function Header() {
                         )}
                     </div>
                     {user ? (
-                        <div className={styles.userMenu}>
-                            <FontAwesomeIcon icon={faUser} />
-                            <span className={styles.userName}>{user.fullName || user.email}</span>
-                            <button className={styles.logoutBtn} onClick={logout} title="Đăng xuất">
-                                <FontAwesomeIcon icon={faRightFromBracket} />
+                        <div className={styles.userDropdownContainer} ref={userDropdownRef}>
+                            <button 
+                                className={`${styles.userButton} ${isUserDropdownOpen ? styles.open : ''}`}
+                                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                            >
+                                <FontAwesomeIcon icon={faUser} />
+                                <span className={styles.userName}>{user.fullName || user.email}</span>
+                                <span className={styles.arrow}>▼</span>
                             </button>
+                            {isUserDropdownOpen && (
+                                <div className={styles.userDropdownMenu}>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        navigate('/my');
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faCircleUser} />
+                                        Thông tin cá nhân
+                                    </div>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        navigate('/orders');
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faBox} />
+                                        Đơn hàng
+                                    </div>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        logout();
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faRightFromBracket} />
+                                        Đăng xuất
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className={styles.loginButton} onClick={() => navigate('/login')}>
