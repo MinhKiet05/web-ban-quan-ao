@@ -196,6 +196,11 @@ async function login(identifier, password, deviceInfo = {}) {
 }
 
 async function generateAccessToken(accountWithUser) {
+  // ⚠️ Validate JWT_SECRET_KEY
+  if (!jwtSecret) {
+    throw createError(DB_ERRORS.QUERY_FAILED, "JWT_SECRET_KEY not configured");
+  }
+
   const payload = {
     accountId: accountWithUser.id,
     userId: accountWithUser.user_id,
@@ -209,6 +214,11 @@ async function generateAccessToken(accountWithUser) {
 }
 
 async function generateRefreshToken(accountWithUser) {
+  // ⚠️ Validate JWT_REFRESH_KEY
+  if (!jwtRefresh) {
+    throw createError(DB_ERRORS.QUERY_FAILED, "JWT_REFRESH_KEY not configured");
+  }
+
   return jwt.sign(
     {
       accountId: accountWithUser.id,
@@ -225,6 +235,11 @@ async function refreshAccessToken(refreshToken) {
   try {
     if (!refreshToken) {
       throw createError(AUTH_ERRORS.REFRESH_TOKEN_INVALID);
+    }
+
+    // ⚠️ Validate JWT_REFRESH_KEY
+    if (!jwtRefresh) {
+      throw createError(DB_ERRORS.QUERY_FAILED, "JWT_REFRESH_KEY not configured");
     }
 
     try {
