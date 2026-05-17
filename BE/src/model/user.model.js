@@ -95,15 +95,36 @@ const findUserById = async (userId) => {
  * @param {Object} userData - User data object
  * @param {string} userData.id - User ID (required)
  * @param {string} [userData.full_name] - User full name
+ * @param {string} [userData.first_name] - User first name
+ * @param {string} [userData.last_name] - User last name
  * @param {string} [userData.date_of_birth] - User date of birth
  * @param {string} [userData.gender] - User gender
  * @param {string} [userData.email] - User email
  * @param {string} [userData.phone] - User phone number
+ * @param {string} [userData.country] - User country
+ * @param {string} [userData.state] - User state
+ * @param {string} [userData.address] - User address
+ * @param {string} [userData.city] - User city
+ * @param {string} [userData.postal_code] - User postal code
  * @returns {Promise<Object>} Updated user
  */
 const updateUserProfile = async (userData) => {
   try {
-    const { id, full_name, date_of_birth, gender, email, phone } = userData;
+    const { 
+      id, 
+      full_name, 
+      first_name,
+      last_name,
+      date_of_birth, 
+      gender, 
+      email, 
+      phone,
+      country,
+      state,
+      address,
+      city,
+      postal_code
+    } = userData;
 
     // Validate required fields
     if (!id) {
@@ -117,14 +138,35 @@ const updateUserProfile = async (userData) => {
     const result = await query(
       `UPDATE users SET 
          full_name = COALESCE($1, full_name),
-         date_of_birth = COALESCE($2, date_of_birth),
-         gender = COALESCE($3, gender),
-         email = COALESCE($4, email),
-         phone = COALESCE($5, phone),
+         first_name = COALESCE($2, first_name),
+         last_name = COALESCE($3, last_name),
+         date_of_birth = COALESCE($4, date_of_birth),
+         gender = COALESCE($5, gender),
+         email = COALESCE($6, email),
+         phone = COALESCE($7, phone),
+         country = COALESCE($8, country),
+         state = COALESCE($9, state),
+         address = COALESCE($10, address),
+         city = COALESCE($11, city),
+         postal_code = COALESCE($12, postal_code),
          updated_at = NOW()
-         WHERE id = $6
-         RETURNING id, email, full_name, phone, date_of_birth, gender, email, phone, role, tier, loyalty_points, total_spent, total_orders, updated_at`,
-      [full_name, date_of_birth, gender, email, phone, id],
+         WHERE id = $13
+         RETURNING *`,
+      [
+        full_name, 
+        first_name,
+        last_name,
+        date_of_birth, 
+        gender, 
+        email, 
+        phone,
+        country,
+        state,
+        address,
+        city,
+        postal_code,
+        id
+      ],
     );
 
     return result.rows.length > 0 ? result.rows[0] : null;

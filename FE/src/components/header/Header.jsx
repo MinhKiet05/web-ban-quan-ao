@@ -1,7 +1,7 @@
 import styles from './Header.module.css';
 import logo from '/logo-KHK.webp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass, faCartShopping, faUser, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faMagnifyingGlass, faCartShopping, faUser, faRightFromBracket, faCircleUser, faBox } from '@fortawesome/free-solid-svg-icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
@@ -16,14 +16,19 @@ export default function Header() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const cartRef = useRef(null);
+    const userDropdownRef = useRef(null);
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+                setIsUserDropdownOpen(false);
             }
         };
 
@@ -155,12 +160,40 @@ export default function Header() {
                         )}
                     </div>
                     {user ? (
-                        <div className={styles.userMenu}>
-                            <FontAwesomeIcon icon={faUser} />
-                            <span className={styles.userName}>{user.fullName || user.email}</span>
-                            <button className={styles.logoutBtn} onClick={logout} title="Đăng xuất">
-                                <FontAwesomeIcon icon={faRightFromBracket} />
+                        <div className={styles.userDropdownContainer} ref={userDropdownRef}>
+                            <button 
+                                className={`${styles.userButton} ${isUserDropdownOpen ? styles.open : ''}`}
+                                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                            >
+                                <FontAwesomeIcon icon={faUser} />
+                                <span className={styles.userName}>{user.fullName || user.email}</span>
+                                <span className={styles.arrow}>▼</span>
                             </button>
+                            {isUserDropdownOpen && (
+                                <div className={styles.userDropdownMenu}>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        navigate('/my');
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faCircleUser} />
+                                        Thông tin cá nhân
+                                    </div>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        navigate('/orders');
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faBox} />
+                                        Đơn hàng
+                                    </div>
+                                    <div className={styles.dropdownItem} onClick={() => {
+                                        logout();
+                                        setIsUserDropdownOpen(false);
+                                    }}>
+                                        <FontAwesomeIcon icon={faRightFromBracket} />
+                                        Đăng xuất
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className={styles.loginButton} onClick={() => navigate('/login')}>

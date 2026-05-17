@@ -355,7 +355,6 @@ header{
 
 .loginButton{
   padding: 8px; 
-  border-radius: 12px;
   border: 1px solid #000000;
   display: flex;
   align-items: center;
@@ -369,13 +368,80 @@ header{
   margin-left: 8px;
 }
 
-.userMenu {
+/* User Dropdown Container */
+.userDropdownContainer {
+  position: relative;
+}
+
+.userButton {
+  font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 12px;
   border: 1px solid #000000;
+  border-radius: 8px;
+  background: transparent;
+  color: #000000;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  border-radius: 0;
+}
+
+.userButton:hover {
+  color: #999999;
+}
+
+.userButton .arrow {
+  font-size: 10px;
+  transition: transform 0.3s;
+}
+
+.userButton.open .arrow {
+  transform: rotate(180deg);
+}
+
+.userDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 220px;
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0.95)
+    ),
+    url("../../../public/noise-bg.webp");
+
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+.userDropdownMenu .dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  color: #000000;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.userDropdownMenu .dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.userDropdownMenu .dropdownItem:hover {
+  color: #999999;
 }
 
 .userName {
@@ -385,20 +451,4 @@ header{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.logoutBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #555;
-  padding: 2px 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-}
-
-.logoutBtn:hover {
-  color: #e53e3e;
 }

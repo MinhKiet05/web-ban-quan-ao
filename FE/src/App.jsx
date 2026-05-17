@@ -15,6 +15,7 @@ import { ProductProvider } from './context/ProductContext.jsx';
 import NotFound from './pages/notFoundPage/NotFound.jsx';
 import SearchPage from './pages/searchPage/SearchPage.jsx';
 import OrdersPage from './pages/ordersPage/OrdersPage.jsx';
+import MyPage from './pages/myPage/MyPage.jsx';
 // Cấu trúc Layout để Header và Footer luôn hiển thị ở mọi trang
 function Layout() {
   return (
@@ -46,6 +47,7 @@ function App() {
               <Route path="orders" element={<OrdersPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="*" element={<NotFound />} />
+              <Route path="my" element={<MyPage />} />
             </Route>
           </Routes>
         </ProductProvider>
