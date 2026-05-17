@@ -27,7 +27,7 @@ const teamMembers = [
     {
         name: 'Trần Huỳnh Minh Kiệt',
         role: 'Co Founder',
-        image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80&auto=format&fit=crop',
+        image: './MK.png',
     },
     {
         name: 'Đinh Tấn Khiêm',
@@ -37,7 +37,7 @@ const teamMembers = [
     {
         name: 'Nguyễn Huy Hoàng',
         role: 'CEO',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&auto=format&fit=crop',
+        image: './HH.png',
     },
 ];
 

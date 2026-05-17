@@ -12,6 +12,7 @@ const {
   getUserSessions,
   logoutSessionById,
 } = require("../services/auth.service");
+const { findUserById } = require("../model/user.model");
 const { HTTP_STATUS } = require('../constants');
 const { 
   createError, 
@@ -44,7 +45,7 @@ const AuthController = {
       res.cookie("refreshToken", result.tokens.refreshToken, {
         httpOnly: true,           // Không thể truy cập từ JavaScript (chống XSS)
         secure: process.env.NODE_ENV === 'production', // HTTPS only trong production
-        sameSite: 'strict',       // Chống CSRF
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' cho cross-origin, 'lax' cho dev
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
         path: '/'
       });
@@ -113,7 +114,7 @@ const AuthController = {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/'
       });
 
@@ -172,7 +173,7 @@ const AuthController = {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/'
       });
 
@@ -239,6 +240,50 @@ const AuthController = {
       res.status(HTTP_STATUS.OK).json({
         success: true,
         message: 'Đã đăng xuất khỏi thiết bị'
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Lấy thông tin user hiện tại
+   * GET /api/auth/me
+   * Yêu cầu: Đã đăng nhập (có access token)
+   * Response: { user: { id, email, fullName, phone, role, ... } }
+   */
+  me: async (req, res, next) => {
+    try {
+      const userId = req.user.userId; // Từ authenticate middleware
+
+      if (!userId) {
+        throw createError(AUTH_ERRORS.AUTH_ACCOUNT_NOT_FOUND);
+      }
+
+      // Lấy thông tin user từ database
+      const user = await findUserById(userId);
+
+      if (!user) {
+        throw createError(AUTH_ERRORS.AUTH_ACCOUNT_NOT_FOUND);
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Lấy thông tin user thành công',
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            fullName: user.full_name,
+            phone: user.phone,
+            role: user.role,
+            avatarUrl: user.avatar_url,
+            tier: user.tier,
+            loyaltyPoints: user.loyalty_points,
+            createdAt: user.created_at
+          }
+        }
       });
 
     } catch (error) {

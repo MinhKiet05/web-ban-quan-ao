@@ -17,6 +17,11 @@ import SearchPage from './pages/searchPage/SearchPage.jsx';
 import OrdersPage from './pages/ordersPage/OrdersPage.jsx';
 import AdminDashboard from './pages/adminDashboard/AdminDashboard.jsx';
 // Cấu trúc Layout để Header và Footer luôn hiển thị ở mọi trang
+import MyPage from './pages/myPage/MyPage.jsx';
+import ProtectedRoute from './components/protectedRoute/ProtectedRoute.jsx';
+
+
+// Layout component
 function Layout() {
   return (
     <>
@@ -32,9 +37,9 @@ function Layout() {
 function App() {
   return (
     <Router>
-      <ScrollToTop /> {/* Đặt ngay sau Router để lắng nghe mọi thay đổi pathname */}
-      <AuthProvider> {/* Bọc AuthProvider */}
-        <ProductProvider> {/* Bọc ProductProvider để quản lý dữ liệu sản phẩm */}
+      <ScrollToTop />
+      <AuthProvider>
+        <ProductProvider>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />
@@ -43,8 +48,24 @@ function App() {
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="about-us" element={<AboutUsPage />} />
               <Route path="cart" element={<CartPage />} />
-              <Route path="checkout" element={<CheckoutPage />} />
-              <Route path="orders" element={<OrdersPage />} />
+
+              {/* Protected routes */}
+              <Route path="checkout" element={
+                <ProtectedRoute>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              } />
+              <Route path="orders" element={
+                <ProtectedRoute>
+                  <OrdersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="my" element={
+                <ProtectedRoute>
+                  <MyPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="login" element={<LoginPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>

@@ -6,7 +6,12 @@
 const { createError } = require("../constants");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const { HTTP_STATUS, USER_ERRORS, VALIDATION_ERRORS } = require("../constants");
-const { getProfile, updateProfile } = require("../services/user.service");
+const { 
+  getProfile, 
+  updateProfile, 
+  getCurrentUser,
+  updateCurrentUser
+} = require("../services/user.service");
 const UserController = {
   /**
    * Lấy thông tin profile
@@ -21,6 +26,24 @@ const UserController = {
       return res.status(HTTP_STATUS.OK).json({
         success: true,
         data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }),
+
+  /**
+   * Lấy thông tin user hiện tại (từ token)
+   * GET /api/users/me
+   */
+  getMe: asyncHandler(async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const user = await getCurrentUser(userId);
+
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -49,6 +72,47 @@ const UserController = {
         success: true,
         message: "Cập nhật thông tin thành công",
         data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }),
+
+  /**
+   * Cập nhật thông tin user hiện tại (từ token)
+   * PUT /api/users/me
+   */
+  updateMe: asyncHandler(async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const {
+        email,
+        phone,
+        first_name,
+        last_name,
+        country,
+        state,
+        address,
+        city,
+        postal_code,
+      } = req.body;
+
+      const user = await updateCurrentUser(userId, {
+        email,
+        phone,
+        first_name,
+        last_name,
+        country,
+        state,
+        address,
+        city,
+        postal_code,
+      });
+
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: "Cập nhật thông tin thành công",
+        data: user,
       });
     } catch (error) {
       next(error);

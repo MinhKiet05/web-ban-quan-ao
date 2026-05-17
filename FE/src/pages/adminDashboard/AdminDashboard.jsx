@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import styles from './AdminDashboard.module.css';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 /* ── Constants ─────────────────────────────────────────────── */
 const STATUS_CONFIG = {
