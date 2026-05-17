@@ -409,12 +409,10 @@ const findByIdDetailBySlug = async (slug) => {
   try {
     const sql = PRODUCT_DETAIL_SQL;
 
-    console.log("=== DEBUG findByIdDetailBySlug ===");
-    console.log("slug:", slug);
-    console.log("SQL:\n", sql);
+   
+    
     const { rows } = await query(sql, [slug]);
-    console.log("rows.length:", rows.length);
-    if (rows.length === 0) console.log("⚠️ No rows returned for slug:", slug);
+   
     return rows[0] || null;
   } catch (error) {
     console.error("Error in findByIdDetailBySlug:", error);
@@ -557,6 +555,37 @@ const deleteProduct = async (id) => {
   }
 };
 
+/**
+ * Hàm lấy danh sách các danh mục sản phẩm đang hoạt động từ cơ sở dữ liệu, sắp xếp theo tên danh mục tăng dần
+ * @returns danh sách các danh mục sản phẩm, mỗi danh mục bao gồm id và name
+ * @throws lỗi nếu có vấn đề trong quá trình truy vấn cơ sở dữ liệu
+ */
+const getCategoryList = async () =>{
+  try {
+      const sql = `SELECT id, name FROM categories WHERE is_active = TRUE ORDER BY name ASC`;
+      const { rows } = await query(sql);
+      return rows;
+  } catch (error) {
+    console.error("Error in getCategoryList:", error);
+    throw error;
+  }
+}
+
+const getTotalCountForProducts = async (filters) => {
+  try {
+    const sql = `SELECT COUNT(*) AS total_count
+      FROM products p
+      LEFT JOIN categories c ON c.id = p.category_id`
+      
+      const totalCount = await query(sql);
+      return totalCount.rows[0].total_count;
+  } catch (error) {
+    console.error("Error in getTotalCountForProducts:", error);
+    throw error;
+  }
+}
+
+
 module.exports = {
   findManyForList,
   findByIdDetailBySlug,
@@ -565,4 +594,6 @@ module.exports = {
   findByCategory,
   updateProduct,
   deleteProduct,
+  getCategoryList,
+  getTotalCountForProducts,
 };

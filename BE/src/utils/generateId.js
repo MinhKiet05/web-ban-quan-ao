@@ -15,7 +15,11 @@ const ALLOWED_TABLES = {
   'sessions': ['id', 'refresh_token'],
   'products': ['id'],
   'orders': ['id'],
-  'categories': ['id']
+  'order_items': ['id'],
+  'payments': ['id'],
+  'categories': ['id'],
+  'carts': ['id'],
+  'cart_items': ['id'],
 };
 
 /**
@@ -33,12 +37,13 @@ const validateTableAndField = (tableName, idField) => {
   }
 };
 
-const checkIdExists = async (tableName, idField, idValue) => {
+const checkIdExists = async (tableName, idField, idValue, dbClient = null) => {
   try {
     //  Validate để chống SQL injection
     validateTableAndField(tableName, idField);
-    
-    const result = await query(
+
+    const runner = dbClient || { query: (sql, params) => query(sql, params) };
+    const result = await runner.query(
       `SELECT 1 FROM ${tableName} WHERE ${idField} = $1 LIMIT 1`,
       [idValue],
     );
@@ -65,11 +70,11 @@ const checkIdExists = async (tableName, idField, idValue) => {
  * // Generate Account ID: ACC001, ACC002, etc.
  * const accountId = await generateUniqueId('Accounts', 'AccountID', 'ACC', 3);
  */
-async function generateUniqueId(tableName, idField, prefix, length = 3) {
+async function generateUniqueId(tableName, idField, prefix, length = 3, dbClient = null) {
   try {
     //  Validate để chống SQL injection
     validateTableAndField(tableName, idField);
-    
+
     // Validate prefix và length để tránh injection
     if (typeof prefix !== 'string' || prefix.length === 0 || prefix.length > 10) {
       throw new Error('Invalid prefix');
@@ -77,16 +82,20 @@ async function generateUniqueId(tableName, idField, prefix, length = 3) {
     if (typeof length !== 'number' || length < 1 || length > 20) {
       throw new Error('Invalid length');
     }
-    
+
+    const runner = dbClient || { query: (sql, params) => query(sql, params) };
+
     // Find the current maximum numeric value with the given prefix
-    const result = await query(
+    // Using the provided client ensures visibility of un-committed inserts
+    // within the same transaction, preventing duplicate key generation.
+    const result = await runner.query(
       `SELECT MAX(
                 CAST(
-                    SUBSTRING(${idField}, ${prefix.length + 1}, ${length})    
+                    SUBSTRING(${idField}, ${prefix.length + 1}, ${length})
                     AS INTEGER
                 )
             ) as max_num
-            FROM ${tableName} 
+            FROM ${tableName}
             WHERE ${idField} LIKE $1`,
       [prefix + "%"],
     );
@@ -96,10 +105,10 @@ async function generateUniqueId(tableName, idField, prefix, length = 3) {
     const newId = prefix + newNum.toString().padStart(length, "0");
 
     // Verify the new ID is truly unique (safety check)
-    const exists = await checkIdExists(tableName, idField, newId);
+    const exists = await checkIdExists(tableName, idField, newId, dbClient);
     if (exists) {
       // If still conflicts, recursively try the next ID
-      return generateUniqueId(tableName, idField, prefix, length);
+      return generateUniqueId(tableName, idField, prefix, length, dbClient);
     }
 
     return newId;
