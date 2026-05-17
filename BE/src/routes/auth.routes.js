@@ -53,6 +53,15 @@ router.post('/refresh', refreshTokenValidation, AuthController.refreshToken);
  */
 router.post('/logout', AuthController.logout);
 
+/**
+ * @route   GET /api/auth/me
+ * @desc    Lấy thông tin user hiện tại từ access token
+ * @access  Private
+ * @header  Authorization: Bearer {accessToken}
+ * @return  { user: { id, email, fullName, phone, role, ... } }
+ */
+router.get('/me', authenticate, AuthController.me);
+
 
 // PROTECTED ROUTES (Cần authentication - Access Token)
 /**
