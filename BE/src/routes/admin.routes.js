@@ -19,4 +19,21 @@ router.get('/orders/:id', AdminController.getOrderDetail);
 // PATCH /api/admin/orders/:id/status — Cập nhật trạng thái
 router.patch('/orders/:id/status', AdminController.updateStatus);
 
+// ── Users ────────────────────────────────────────────────────────────────────
+router.get('/users', AdminController.getUsers);
+router.patch('/users/:id/role', AdminController.updateUserRole);
+router.patch('/users/:id/block', AdminController.toggleUserBlock);
+
+// ── Inventory ────────────────────────────────────────────────────────────────
+router.get('/inventory', AdminController.getInventory);
+router.patch('/inventory/variants/:id', AdminController.updateVariantStock);
+
+// ── Products ─────────────────────────────────────────────────────────────────
+router.get('/products', AdminController.getProducts);
+router.put('/products/:id', AdminController.updateProduct);
+
+// ── Analytics / Stats ────────────────────────────────────────────────────────
+router.get('/stats', AdminController.getStats);
+
 module.exports = router;
+

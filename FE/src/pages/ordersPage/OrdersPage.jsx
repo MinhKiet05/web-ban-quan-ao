@@ -155,7 +155,7 @@ function OrderDetail({ orderId, token, onClose, onCancelled }) {
                 <button className={styles.modalClose} onClick={onClose} id="order-modal-close">✕</button>
 
                 {loading && (
-                    <div style={{ textAlign: 'center', padding: '3rem 0', color: '#475569' }}>
+                    <div style={{ textAlign: 'center', padding: '3rem 0', color: '#555' }}>
                         ⏳ Đang tải chi tiết đơn hàng...
                     </div>
                 )}
@@ -378,9 +378,10 @@ export default function OrdersPage() {
                         className={styles.backBtn}
                         onClick={() => navigate(-1)}
                     >
-                        ← Quay lại
+                        <span className={styles.backArrow}>←</span>
+                        <span className={styles.backLine} />
                     </button>
-                    <h1 className={styles.title}>Đơn hàng của tôi</h1>
+                    <h1 className={styles.title}>ĐƠN HÀNG CỦA TÔI</h1>
                 </div>
 
                 {/* Filter tabs */}
@@ -396,10 +397,11 @@ export default function OrdersPage() {
                             {s !== 'all' && orders.filter(o => o.status === s).length > 0 && (
                                 <span style={{
                                     marginLeft: 5,
-                                    background: filterStatus === s ? 'rgba(255,255,255,0.25)' : '#1e2130',
+                                    background: filterStatus === s ? 'rgba(255,255,255,0.25)' : '#e0e0e0',
                                     borderRadius: 999,
                                     padding: '0 5px',
                                     fontSize: '0.68rem',
+                                    color: filterStatus === s ? '#fff' : '#555'
                                 }}>
                                     {orders.filter(o => o.status === s).length}
                                 </span>
@@ -482,7 +484,7 @@ export default function OrdersPage() {
                 )}
 
                 {loading && orders.length > 0 && (
-                    <p style={{ textAlign: 'center', color: '#475569', padding: '1rem', fontSize: '0.85rem' }}>
+                    <p style={{ textAlign: 'center', color: '#555', padding: '1rem', fontSize: '0.85rem' }}>
                         ⏳ Đang tải...
                     </p>
                 )}
