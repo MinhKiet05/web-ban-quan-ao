@@ -22,6 +22,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// Serve uploaded files as static
+app.use('/uploads', express.static('uploads'));
+
 // Health check endpoint
 app.get('/', (req, res) => {
     res.json({ 
