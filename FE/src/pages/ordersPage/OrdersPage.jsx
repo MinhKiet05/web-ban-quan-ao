@@ -1,28 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+    faHourglassStart, faCheckCircle, faBoxOpen, faTruck, faGift, faCheck, 
+    faTimesCircle, faUndo, faList, faMapMarkerAlt, faShoppingBag, faMoneyBillAlt, 
+    faCreditCard, faInbox, faArrowLeft
+} from '@fortawesome/free-solid-svg-icons';
 import styles from './OrdersPage.module.css';
 
 const BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 /* ── Config ─────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-    pending:    { text: 'Chờ xử lý',      color: '#f59e0b', icon: '⏳', step: 0 },
-    confirmed:  { text: 'Đã xác nhận',    color: '#3b82f6', icon: '✅', step: 1 },
-    packing:    { text: 'Đang đóng gói',  color: '#8b5cf6', icon: '📦', step: 2 },
-    shipped:    { text: 'Đang giao hàng', color: '#06b6d4', icon: '🚚', step: 3 },
-    delivered:  { text: 'Đã giao hàng',   color: '#10b981', icon: '🎉', step: 4 },
-    completed:  { text: 'Hoàn thành',     color: '#059669', icon: '✔️', step: 5 },
-    cancelled:  { text: 'Đã huỷ',         color: '#ef4444', icon: '❌', step: -1 },
-    refunded:   { text: 'Đã hoàn tiền',   color: '#f97316', icon: '↩️', step: -1 },
+    pending:    { text: 'Chờ xử lý',      color: '#f59e0b', icon: faHourglassStart, step: 0 },
+    confirmed:  { text: 'Đã xác nhận',    color: '#3b82f6', icon: faCheckCircle, step: 1 },
+    packing:    { text: 'Đang đóng gói',  color: '#8b5cf6', icon: faBoxOpen, step: 2 },
+    shipped:    { text: 'Đang giao hàng', color: '#06b6d4', icon: faTruck, step: 3 },
+    delivered:  { text: 'Đã giao hàng',   color: '#10b981', icon: faGift, step: 4 },
+    completed:  { text: 'Hoàn thành',     color: '#059669', icon: faCheck, step: 5 },
+    cancelled:  { text: 'Đã huỷ',         color: '#ef4444', icon: faTimesCircle, step: -1 },
+    refunded:   { text: 'Đã hoàn tiền',   color: '#f97316', icon: faUndo, step: -1 },
 };
 
 const STEPS = [
-    { key: 'pending',   label: 'Chờ xử lý',   icon: '📋' },
-    { key: 'confirmed', label: 'Xác nhận',    icon: '✅' },
-    { key: 'packing',   label: 'Đóng gói',    icon: '📦' },
-    { key: 'shipped',   label: 'Giao hàng',   icon: '🚚' },
-    { key: 'delivered', label: 'Hoàn thành', icon: '🎉' },
+    { key: 'pending',   label: 'Chờ xử lý',   icon: faList },
+    { key: 'confirmed', label: 'Xác nhận',    icon: faCheckCircle },
+    { key: 'packing',   label: 'Đóng gói',    icon: faBoxOpen },
+    { key: 'shipped',   label: 'Giao hàng',   icon: faTruck },
+    { key: 'delivered', label: 'Hoàn thành', icon: faGift },
 ];
 
 function fmt(v) {
@@ -55,7 +61,7 @@ function StatusTimeline({ status }) {
     if (isCancelled) {
         return (
             <div className={styles.cancelledBanner}>
-                <strong>❌ Đơn hàng đã bị huỷ</strong>
+                <strong><FontAwesomeIcon icon={faTimesCircle} /> Đơn hàng đã bị huỷ</strong>
                 <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>
                     Đơn hàng này đã được huỷ và không thể tiếp tục xử lý.
                 </p>
@@ -84,7 +90,7 @@ function StatusTimeline({ status }) {
                                 className={`${styles.stepDot} ${done ? styles.stepDotDone : ''} ${active ? styles.stepDotActive : ''}`}
                                 style={active ? { '--step-color': cfg.color } : {}}
                             >
-                                {done ? '✓' : step.icon}
+                                {done ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={step.icon} />}
                             </div>
                             <span
                                 className={`${styles.stepLabel} ${done ? styles.stepLabelDone : ''} ${active ? styles.stepLabelActive : ''}`}
@@ -187,7 +193,7 @@ function OrderDetail({ orderId, token, onClose, onCancelled }) {
 
                         {/* Shipping info */}
                         <div className={styles.modalSection}>
-                            <div className={styles.sectionTitle}>📍 Địa chỉ giao hàng</div>
+                            <div className={styles.sectionTitle}><FontAwesomeIcon icon={faMapMarkerAlt} /> Địa chỉ giao hàng</div>
                             <div className={styles.infoGrid}>
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoKey}>Người nhận</div>
@@ -224,14 +230,14 @@ function OrderDetail({ orderId, token, onClose, onCancelled }) {
                         {/* Products */}
                         <div className={styles.modalSection}>
                             <div className={styles.sectionTitle}>
-                                🛍️ Sản phẩm ({(order.items || []).length})
+                                <FontAwesomeIcon icon={faShoppingBag} /> Sản phẩm ({(order.items || []).length})
                             </div>
                             <div className={styles.itemList}>
                                 {(order.items || []).map(item => (
                                     <div key={item.id} className={styles.itemRow}>
                                         {item.image_url
                                             ? <img src={item.image_url} alt={item.product_name} className={styles.itemImg} />
-                                            : <div className={styles.itemImgPlaceholder}>👕</div>
+                                            : <div className={styles.itemImgPlaceholder}><FontAwesomeIcon icon={faShoppingBag} /></div>
                                         }
                                         <div className={styles.itemInfo}>
                                             <div className={styles.itemName}>{item.product_name}</div>
@@ -251,7 +257,7 @@ function OrderDetail({ orderId, token, onClose, onCancelled }) {
 
                         {/* Summary */}
                         <div className={styles.modalSection}>
-                            <div className={styles.sectionTitle}>💰 Tổng tiền</div>
+                            <div className={styles.sectionTitle}><FontAwesomeIcon icon={faMoneyBillAlt} /> Tổng tiền</div>
                             <div className={styles.summaryRow}>
                                 <span>Tạm tính</span><span>{fmt(order.subtotal)}</span>
                             </div>
@@ -378,7 +384,7 @@ export default function OrdersPage() {
                         className={styles.backBtn}
                         onClick={() => navigate(-1)}
                     >
-                        <span className={styles.backArrow}>←</span>
+                        <span className={styles.backArrow}><FontAwesomeIcon icon={faArrowLeft} /></span>
                         <span className={styles.backLine} />
                     </button>
                     <h1 className={styles.title}>ĐƠN HÀNG CỦA TÔI</h1>
@@ -424,7 +430,7 @@ export default function OrdersPage() {
                 {/* Empty state */}
                 {!loading && filteredOrders.length === 0 && (
                     <div className={styles.empty}>
-                        <div className={styles.emptyIcon}>📭</div>
+                        <div className={styles.emptyIcon}><FontAwesomeIcon icon={faInbox} /></div>
                         <p className={styles.emptyText}>
                             {filterStatus === 'all'
                                 ? 'Bạn chưa có đơn hàng nào.'
@@ -459,12 +465,12 @@ export default function OrdersPage() {
                                     <span className={styles.orderTotal}>{fmt(order.total)}</span>
                                 </div>
                                 <div className={styles.orderMeta}>
-                                    {order.item_count != null && <span>🛍️ {order.item_count} sản phẩm</span>}
+                                    {order.item_count != null && <span><FontAwesomeIcon icon={faShoppingBag} /> {order.item_count} sản phẩm</span>}
                                     {order.shipping_name && (
-                                        <span>📍 {order.shipping_district}, {order.shipping_province}</span>
+                                        <span><FontAwesomeIcon icon={faMapMarkerAlt} /> {order.shipping_district}, {order.shipping_province}</span>
                                     )}
                                     {order.payment_method && (
-                                        <span>💳 {order.payment_method.toUpperCase()}</span>
+                                        <span><FontAwesomeIcon icon={faCreditCard} /> {order.payment_method.toUpperCase()}</span>
                                     )}
                                 </div>
                             </div>
