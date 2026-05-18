@@ -5,32 +5,9 @@
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_API_KEY = import.meta.env.VITE_CLOUDINARY_API_KEY;
-const CLOUDINARY_API_SECRET = import.meta.env.VITE_CLOUDINARY_API_SECRET;
-
-/**
- * Generate SHA-1 signature for Cloudinary upload
- * @param {Object} params - Upload parameters
- * @param {string} apiSecret - Cloudinary API secret
- * @returns {Promise<string>} - Generated signature
- */
-const generateSignature = async (params, apiSecret) => {
-  // Sort parameters alphabetically and create query string
-  const sortedParams = Object.keys(params)
-    .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
-  
-  const stringToSign = sortedParams + apiSecret;
-  
-  // Use Web Crypto API to generate SHA-1 hash
-  const encoder = new TextEncoder();
-  const data = encoder.encode(stringToSign);
-  const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return hashHex;
-};
+// For signature generation, always use local backend if available, fallback to production
+const SIGNATURE_API_URL = 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 /**
  * Upload avatar image to Cloudinary
@@ -54,23 +31,57 @@ export const uploadAvatarToCloudinary = async (file) => {
   }
 
   try {
-    // Prepare upload parameters
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const uploadParams = {
-      timestamp: timestamp,
-      folder: 'web_ban_quan_ao/avatars',
-      resource_type: 'auto'
-    };
+    // Get signature from backend (safe method)
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại');
+    }
 
-    // Generate signature
-    const signature = await generateSignature(uploadParams, CLOUDINARY_API_SECRET);
+    // Try local backend first for signature
+    let signatureResponse = await fetch(`${SIGNATURE_API_URL}/users/avatar/signature`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).catch(err => null);
+
+    const signatureData = signatureResponse ? await signatureResponse.json() : null;
+    
+    // If local backend fails, try production backend (if it has the endpoint)
+    if (!signatureResponse?.ok && BASE_URL !== SIGNATURE_API_URL) {
+      console.warn('Local backend unavailable, trying production...');
+      signatureResponse = await fetch(`${BASE_URL}/users/avatar/signature`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    }
+
+    if (!signatureResponse?.ok) {
+      const errorData = signatureData || (signatureResponse ? await signatureResponse.json() : {});
+      console.error('Signature API error:', {
+        status: signatureResponse?.status,
+        data: errorData
+      });
+      throw new Error(errorData?.error?.message || `Không thể lấy signature upload (${signatureResponse?.status || 'Network error'})`);
+    }
+
+    const finalData = signatureData || await signatureResponse.json();
+    
+    if (!finalData.success || !finalData.data) {
+      console.error('Invalid signature response:', finalData);
+      throw new Error('Dữ liệu signature không hợp lệ');
+    }
+
+    const { signature, timestamp, folder } = finalData.data;
 
     // Create form data
     const formData = new FormData();
     formData.append('file', file);
     formData.append('api_key', CLOUDINARY_API_KEY);
     formData.append('timestamp', timestamp);
-    formData.append('folder', 'web_ban_quan_ao/avatars');
+    formData.append('folder', folder);
     formData.append('signature', signature);
     formData.append('resource_type', 'auto');
 

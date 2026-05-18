@@ -14,6 +14,7 @@ const userController = require('../controller/user.controller');
 router.get('/me', authenticate, userController.getMe);
 router.put('/me', authenticate, userController.updateMe);
 router.post('/avatar', authenticate, upload.single('avatar'), multerErrorHandler, processImageMiddleware, userController.uploadAvatar);
+router.post('/avatar/signature', authenticate, userController.generateAvatarSignature);
 
 // Routes cũ (legacy)
 router.get('/get-profile/:id', authenticate, userController.getProfile);

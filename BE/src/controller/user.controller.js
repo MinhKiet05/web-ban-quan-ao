@@ -3,6 +3,7 @@
  * @description Xử lý các chức năng liên quan đến thông tin profile người dùng
  */
 
+const crypto = require('crypto');
 const { createError } = require("../constants");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const { HTTP_STATUS, USER_ERRORS, VALIDATION_ERRORS } = require("../constants");
@@ -140,6 +141,51 @@ const UserController = {
         success: true,
         message: "Cập nhật avatar thành công",
         data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }),
+
+  /**
+   * Generate Cloudinary upload signature (safe on server-side)
+   * POST /api/users/avatar/signature
+   */
+  generateAvatarSignature: asyncHandler(async (req, res, next) => {
+    try {
+      const cloudinarySecret = process.env.CLOUDINARY_API_SECRET;
+      
+      if (!cloudinarySecret) {
+        throw createError(VALIDATION_ERRORS.MISSING_REQUIRED_FIELD, "Cloudinary API Secret không được cấu hình");
+      }
+
+      const timestamp = Math.floor(Date.now() / 1000);
+      
+      // Parameters for Cloudinary upload
+      const params = {
+        timestamp: timestamp,
+        folder: 'web_ban_quan_ao/avatars'
+      };
+
+      // Create string to sign: key1=value1&key2=value2...+secret
+      const sortedKeys = Object.keys(params).sort();
+      const stringToSign = sortedKeys
+        .map(key => `${key}=${params[key]}`)
+        .join('&') + cloudinarySecret;
+
+      // Generate SHA-1 signature
+      const signature = crypto
+        .createHash('sha1')
+        .update(stringToSign)
+        .digest('hex');
+
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: {
+          signature,
+          timestamp,
+          folder: params.folder
+        },
       });
     } catch (error) {
       next(error);

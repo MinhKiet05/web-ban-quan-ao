@@ -6,7 +6,7 @@ header{
       rgba(255, 255, 255, 0.95),
       rgba(255, 255, 255, 0.95)
     ),
-    url("../../../public/noise-bg.webp");
+    url("../../../noise-bg.webp");
   background-size: cover;
   background-position: center;
   display: flex;
@@ -154,7 +154,7 @@ header{
       rgba(255, 255, 255, 0.95),
       rgba(255, 255, 255, 0.95)
     ),
-    url("../../../public/noise-bg.webp");
+    url("../../../noise-bg.webp");
 
   background-size: cover;
   background-position: center;
@@ -445,7 +445,7 @@ header{
       rgba(255, 255, 255, 0.95),
       rgba(255, 255, 255, 0.95)
     ),
-    url("../../../public/noise-bg.webp");
+    url("../../../noise-bg.webp");
 
   background-size: cover;
   background-position: center;

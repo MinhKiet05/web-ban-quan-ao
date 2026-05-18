@@ -74,11 +74,16 @@ export default function MyPage() {
             
             if (data.success && data.data) {
                 const userData = data.data;
+                
+                // Parse full_name into first_name and last_name
+                const [firstName, ...lastNameParts] = (userData.full_name || '').split(' ');
+                const lastName = lastNameParts.join(' ') || '';
+                
                 setInfo({
                     email: userData.email || '',
                     phone: userData.phone || '',
-                    firstName: userData.first_name || '',
-                    lastName: userData.last_name || '',
+                    firstName: userData.first_name || firstName || '',
+                    lastName: userData.last_name || lastName || '',
                     country: userData.country || '',
                     state: userData.state || '',
                     address: userData.address || '',
@@ -132,44 +137,12 @@ export default function MyPage() {
             // Upload to Cloudinary
             const cloudinaryUrl = await uploadAvatarToCloudinary(file);
             
-            // Save to database via API
-            const token = localStorage.getItem('accessToken');
-            const payload = {
-                email: info.email,
-                phone: info.phone,
-                first_name: info.firstName,
-                last_name: info.lastName,
-                country: info.country,
-                state: info.state,
-                address: info.address,
-                city: info.city,
-                postal_code: info.postalCode,
-                avatar_url: cloudinaryUrl,
-            };
-
-            const response = await fetch(`${BASE_URL}/users/me`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(data.error?.message || data.message || 'Lưu avatar thất bại');
-            }
-
+            // Update avatar in local state only (preview)
             setInfo(prev => ({ ...prev, avatarUrl: cloudinaryUrl }));
-            setSuccessMsg('Avatar đã được cập nhật thành công');
-            // Update user info in AuthContext so Header component reflects the change
-            updateUserInfo({ 
-                avatar_url: cloudinaryUrl,
-                full_name: info.firstName && info.lastName ? `${info.firstName} ${info.lastName}` : ''
-            });
-            setTimeout(() => setSuccessMsg(''), 3000);
+            setSuccessMsg('Avatar đã được upload. Nhấn "Lưu" để lưu vào tài khoản.');
+            
+            // Do NOT update header here - only update after clicking Save
+            setTimeout(() => setSuccessMsg(''), 4000);
         } catch (err) {
             console.error('Avatar upload error:', err);
             setErrorMsg(err.message || 'Có lỗi xảy ra khi upload avatar');
@@ -210,6 +183,8 @@ export default function MyPage() {
                 avatar_url: info.avatarUrl || null,
             };
 
+            console.log('Sending payload:', payload);
+
             const response = await fetch(`${BASE_URL}/users/me`, {
                 method: 'PUT',
                 headers: {
@@ -220,14 +195,18 @@ export default function MyPage() {
             });
 
             const data = await response.json();
+            console.log('Save response:', { status: response.status, data });
 
             if (!response.ok || !data.success) {
-                throw new Error(data.error?.message || data.message || 'Cập nhật thông tin thất bại');
+                // More detailed error message
+                const errorMsg = data.error?.details || data.error?.message || data.message || 'Cập nhật thông tin thất bại';
+                throw new Error(errorMsg);
             }
 
             setSuccessMsg('Cập nhật thông tin thành công');
             setIsEditing(false);
-            // Update AuthContext with new user info
+            
+            // Update AuthContext with new user info - ONLY after successful save
             updateUserInfo({
                 full_name: `${info.firstName} ${info.lastName}`,
                 firstName: info.firstName,
@@ -236,6 +215,7 @@ export default function MyPage() {
             });
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err) {
+            console.error('Update user error:', err);
             setErrorMsg(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
         } finally {
             setSaving(false);
