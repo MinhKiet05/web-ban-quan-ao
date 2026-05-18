@@ -123,7 +123,8 @@ const updateUserProfile = async (userData) => {
       state,
       address,
       city,
-      postal_code
+      postal_code,
+      avatar_url
     } = userData;
 
     // Validate required fields
@@ -149,8 +150,9 @@ const updateUserProfile = async (userData) => {
          address = COALESCE($10, address),
          city = COALESCE($11, city),
          postal_code = COALESCE($12, postal_code),
+         avatar_url = COALESCE($13, avatar_url),
          updated_at = NOW()
-         WHERE id = $13
+         WHERE id = $14
          RETURNING *`,
       [
         full_name, 
@@ -165,6 +167,7 @@ const updateUserProfile = async (userData) => {
         address,
         city,
         postal_code,
+        avatar_url,
         id
       ],
     );
@@ -175,10 +178,40 @@ const updateUserProfile = async (userData) => {
   }
 };
 
+/**
+ * Update user avatar
+ * @param {string} userId - User ID
+ * @param {string} avatarUrl - Avatar URL path
+ * @returns {Promise<Object>} Updated user
+ */
+const updateUserAvatar = async (userId, avatarUrl) => {
+  try {
+    if (!userId || !avatarUrl) {
+      throw createError(
+        VALIDATION_ERRORS.MISSING_REQUIRED_FIELD,
+        "User ID và avatar URL là bắt buộc"
+      );
+    }
+
+    const result = await query(
+      `UPDATE users SET 
+         avatar_url = $1,
+         updated_at = NOW()
+         WHERE id = $2
+         RETURNING id, email, full_name, first_name, last_name, phone, avatar_url, updated_at`,
+      [avatarUrl, userId]
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    throw error;
+  }
+};
 
 module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
-  updateUserProfile
+  updateUserProfile,
+  updateUserAvatar
 };
