@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { uploadAvatarToCloudinary } from '../../utils/cloudinaryUtils';
+import { getAvatarInitial } from '../../utils/avatarUtils';
 import checkoutStyles from '../checkoutPage/CheckoutPage.module.css';
 import styles from './MyPage.module.css';
 
-const BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 const COUNTRIES = [
     'Vietnam', 'United States', 'United Kingdom', 'France', 'Germany',
@@ -13,11 +15,13 @@ const COUNTRIES = [
 
 export default function MyPage() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUserInfo } = useAuth();
+    const fileInputRef = useRef(null);
     
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState({});
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -32,6 +36,7 @@ export default function MyPage() {
         address: '',
         city: '',
         postalCode: '',
+        avatarUrl: '',
     });
 
     // Fetch user info
@@ -79,6 +84,7 @@ export default function MyPage() {
                     address: userData.address || '',
                     city: userData.city || '',
                     postalCode: userData.postal_code || '',
+                    avatarUrl: userData.avatar_url || '',
                 });
             }
         } catch (err) {
@@ -108,6 +114,74 @@ export default function MyPage() {
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
     };
 
+    const handleAvatarClick = () => {
+        if (isEditing && fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        setErrorMsg('');
+        setSuccessMsg('');
+
+        try {
+            // Upload to Cloudinary
+            const cloudinaryUrl = await uploadAvatarToCloudinary(file);
+            
+            // Save to database via API
+            const token = localStorage.getItem('accessToken');
+            const payload = {
+                email: info.email,
+                phone: info.phone,
+                first_name: info.firstName,
+                last_name: info.lastName,
+                country: info.country,
+                state: info.state,
+                address: info.address,
+                city: info.city,
+                postal_code: info.postalCode,
+                avatar_url: cloudinaryUrl,
+            };
+
+            const response = await fetch(`${BASE_URL}/users/me`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error?.message || data.message || 'Lưu avatar thất bại');
+            }
+
+            setInfo(prev => ({ ...prev, avatarUrl: cloudinaryUrl }));
+            setSuccessMsg('Avatar đã được cập nhật thành công');
+            // Update user info in AuthContext so Header component reflects the change
+            updateUserInfo({ 
+                avatar_url: cloudinaryUrl,
+                full_name: info.firstName && info.lastName ? `${info.firstName} ${info.lastName}` : ''
+            });
+            setTimeout(() => setSuccessMsg(''), 3000);
+        } catch (err) {
+            console.error('Avatar upload error:', err);
+            setErrorMsg(err.message || 'Có lỗi xảy ra khi upload avatar');
+        } finally {
+            setUploading(false);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
     const handleSave = async () => {
         const e = validateInfo();
         if (Object.keys(e).length > 0) {
@@ -133,6 +207,7 @@ export default function MyPage() {
                 address: info.address,
                 city: info.city,
                 postal_code: info.postalCode,
+                avatar_url: info.avatarUrl || null,
             };
 
             const response = await fetch(`${BASE_URL}/users/me`, {
@@ -152,6 +227,13 @@ export default function MyPage() {
 
             setSuccessMsg('Cập nhật thông tin thành công');
             setIsEditing(false);
+            // Update AuthContext with new user info
+            updateUserInfo({
+                full_name: `${info.firstName} ${info.lastName}`,
+                firstName: info.firstName,
+                lastName: info.lastName,
+                avatar_url: info.avatarUrl
+            });
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err) {
             setErrorMsg(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
@@ -177,8 +259,48 @@ export default function MyPage() {
             <div className={checkoutStyles.container}>
                 <div className={checkoutStyles.leftCol}>
 
+                    {/* Hidden File Input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleAvatarChange}
+                        style={{ display: 'none' }}
+                    />
+
                     {/* Title */}
                     <h1 className={checkoutStyles.title}>THÔNG TIN CÁ NHÂN</h1>
+
+                    {/* Avatar Section */}
+                    <div className={styles.avatarSection}>
+                        <div 
+                            className={`${styles.avatarContainer} ${isEditing ? styles.editable : ''}`}
+                            onClick={handleAvatarClick}
+                            title={isEditing ? 'Nhấp để đổi avatar' : ''}
+                        >
+                            {info.avatarUrl ? (
+                                <img 
+                                    src={info.avatarUrl}
+                                    alt="User Avatar"
+                                    className={styles.avatarImage}
+                                />
+                            ) : (
+                                <div className={styles.avatarPlaceholder}>
+                                    <span className={styles.avatarInitial}>
+                                        {getAvatarInitial(user || info)}
+                                    </span>
+                                </div>
+                            )}
+                            {isEditing && (
+                                <div className={styles.avatarOverlay}>
+                                    <span className={styles.editIcon}>✎</span>
+                                </div>
+                            )}
+                        </div>
+                        {uploading && (
+                            <div className={styles.uploadingText}>Đang upload...</div>
+                        )}
+                    </div>
 
                     {/* Success Message */}
                     {successMsg && (
@@ -200,8 +322,7 @@ export default function MyPage() {
                                 name="email"
                                 placeholder="Email"
                                 value={info.email}
-                                onChange={handleInfoChange}
-                                disabled={!isEditing}
+                                disabled={true}
                             />
                             {errors.email && <span className={checkoutStyles.errorMsg}>{errors.email}</span>}
                         </div>

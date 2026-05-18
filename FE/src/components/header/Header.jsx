@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
+import { getAvatarInitial } from '../../utils/avatarUtils';
 
 export default function Header() {
     const location = useLocation();
@@ -165,7 +166,18 @@ export default function Header() {
                                 className={`${styles.userButton} ${isUserDropdownOpen ? styles.open : ''}`}
                                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                             >
-                                <FontAwesomeIcon icon={faUser} />
+                                {user?.avatar_url ? (
+                                    <img 
+                                        src={user.avatar_url}
+                                        alt="User Avatar"
+                                        className={styles.userAvatar}
+                                        title={user.fullName || user.email}
+                                    />
+                                ) : (
+                                    <div className={styles.userAvatarPlaceholder}>
+                                        <span>{getAvatarInitial(user)}</span>
+                                    </div>
+                                )}
                                 <span className={styles.userName}>{user.fullName || user.email}</span>
                                 <span className={styles.arrow}>▼</span>
                             </button>

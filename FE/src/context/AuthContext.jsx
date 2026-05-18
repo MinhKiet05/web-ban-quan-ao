@@ -112,6 +112,13 @@ export function AuthProvider({ children }) {
         setLoading(false);
     };
 
+    // Update user info (used after avatar upload, etc.)
+    const updateUserInfo = (updatedUserData) => {
+        const newUserData = { ...user, ...updatedUserData };
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+    };
+
     const value = {
         user,
         accessToken,
@@ -121,6 +128,7 @@ export function AuthProvider({ children }) {
         loading,
         error,
         isAuthenticated: !!user && !!accessToken,
+        updateUserInfo,
     };
 
     return (
