@@ -4,7 +4,14 @@ import { authService } from '../services/authService';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        try {
+            const savedUser = localStorage.getItem('user');
+            return savedUser ? JSON.parse(savedUser) : null;
+        } catch {
+            return null;
+        }
+    });
     const [accessToken, setAccessToken] = useState(
         () => localStorage.getItem('accessToken')
     );
@@ -112,6 +119,13 @@ export function AuthProvider({ children }) {
         setLoading(false);
     };
 
+    // Update user info (used after avatar upload, etc.)
+    const updateUserInfo = (updatedUserData) => {
+        const newUserData = { ...user, ...updatedUserData };
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+    };
+
     const value = {
         user,
         accessToken,
@@ -121,6 +135,7 @@ export function AuthProvider({ children }) {
         loading,
         error,
         isAuthenticated: !!user && !!accessToken,
+        updateUserInfo,
     };
 
     return (

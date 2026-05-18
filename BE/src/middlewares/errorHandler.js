@@ -53,11 +53,17 @@ const errorHandler = (err, req, res, next) => {
   console.error('Error occurred:', JSON.stringify(errorLog, null, 2));
 
   let processedError = err;
-  let statusCode = err.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR;
+  let statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR;
+
+  // Khởi tạo statusCode từ error nếu có
+  if (err && err.statusCode) {
+    statusCode = err.statusCode;
+  }
 
   // Xử lý AppError (Operational errors) - sử dụng trực tiếp
   if (err instanceof AppError) {
-    statusCode = err.statusCode;
+    processedError = err;
+    statusCode = err.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR;
   }
   // Xử lý JWT errors - convert sang AppError
   else if (err.name === 'JsonWebTokenError') {
@@ -133,7 +139,7 @@ const errorHandler = (err, req, res, next) => {
     const result = createErrorResponse(
       err.errorCode || 'INTERNAL_SERVER_ERROR',
       message,
-      statusCode,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
       process.env.NODE_ENV !== 'production' 
         ? { stack: err.stack?.split('\n').map(line => line.trim()) }
         : null
