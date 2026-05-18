@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartBar, faShoppingBag, faShirt, faUsers, faBox, faHome } from '@fortawesome/free-solid-svg-icons';
 import styles from './AdminDashboard.module.css';
 
 import StatsView from './components/StatsView.jsx';
@@ -25,11 +27,11 @@ export default function AdminDashboard() {
     if (authLoading) return <div className={styles.page}>Đang tải...</div>;
 
     const VIEWS = [
-        { id: 'stats', label: 'Thống kê', icon: '📊' },
-        { id: 'orders', label: 'Đơn hàng', icon: '🛍️' },
-        { id: 'products', label: 'Sản phẩm', icon: '👕' },
-        { id: 'users', label: 'Người dùng', icon: '👥' },
-        { id: 'inventory', label: 'Kho hàng', icon: '📦' },
+        { id: 'stats', label: 'Thống kê', icon: faChartBar },
+        { id: 'orders', label: 'Đơn hàng', icon: faShoppingBag },
+        { id: 'products', label: 'Sản phẩm', icon: faShirt },
+        { id: 'users', label: 'Người dùng', icon: faUsers },
+        { id: 'inventory', label: 'Kho hàng', icon: faBox },
     ];
 
     const renderView = () => {
@@ -56,13 +58,13 @@ export default function AdminDashboard() {
                             className={`${styles.navItem} ${activeView === item.id ? styles.navItemActive : ''}`}
                             onClick={() => setActiveView(item.id)}
                         >
-                            <span className={styles.navIcon}>{item.icon}</span>
+                            <span className={styles.navIcon}><FontAwesomeIcon icon={item.icon} /></span>
                             {item.label}
                         </button>
                     ))}
                     <div style={{marginTop: '2rem', borderTop: '1px solid #e0e0e0', paddingTop: '1rem'}}>
                         <button className={styles.navItem} onClick={() => navigate('/')}>
-                            <span className={styles.navIcon}>🏠</span> Về trang chủ
+                            <span className={styles.navIcon}><FontAwesomeIcon icon={faHome} /></span> Về trang chủ
                         </button>
                     </div>
                 </nav>
