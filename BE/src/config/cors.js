@@ -12,7 +12,7 @@ module.exports = {
     'http://localhost:3000',
     'https://web-ban-quan-ao-nu.vercel.app'
   ].filter(Boolean),
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
 };
 

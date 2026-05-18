@@ -218,6 +218,45 @@ async function updateProfile({ id, full_name, date_of_birth, gender, email, phon
   }
 }
 
+/**
+ * Lấy thông tin profile
+ * @param {string} id User ID
+ */
+async function getProfile(id) {
+  try {
+    if (!id) {
+      throw createError(VALIDATION_ERRORS.MISSING_REQUIRED_FIELD, "User ID là bắt buộc");
+    }
+
+    const result = await findUserById(id);
+    if (!result) {
+      throw createError(USER_ERRORS.USER_NOT_FOUND);
+    }
+
+    return {
+      id: result.id,
+      email: result.email,
+      full_name: result.full_name,
+      phone: result.phone,
+      avatar_url: result.avatar_url,
+      role: result.role,
+      tier: result.tier,
+      loyalty_points: result.loyalty_points,
+      total_spent: result.total_spent,
+      total_orders: result.total_orders,
+      created_at: result.created_at,
+      updated_at: result.updated_at,
+      date_of_birth: result.date_of_birth,
+      gender: result.gender,
+    };
+  } catch (error) {
+    if (error.isOperational) {
+      throw error;
+    }
+    throw createError(DB_ERRORS);
+  }
+}
+
 module.exports = {
   getProfile,
   updateProfile,
