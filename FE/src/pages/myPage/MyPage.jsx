@@ -3,39 +3,50 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { uploadAvatarToCloudinary } from '../../utils/cloudinaryUtils';
 import { getAvatarInitial } from '../../utils/avatarUtils';
-import checkoutStyles from '../checkoutPage/CheckoutPage.module.css';
 import styles from './MyPage.module.css';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+
+/** Normalize any date value to YYYY-MM-DD for <input type="date"> */
+function toDateInput(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getUTCFullYear();
+    const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getUTCDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
 
 function userToInfo(u) {
     return {
         fullName:    u?.fullName    || '',
         phone:       u?.phone       || '',
         avatarUrl:   u?.avatarUrl   || '',
-        dateOfBirth: u?.dateOfBirth || '',
+        dateOfBirth: toDateInput(u?.dateOfBirth),
         gender:      u?.gender      || '',
     };
 }
 
+const TIER_LABELS = { normal: 'Thành viên', silver: 'Bạc', gold: 'Vàng', platinum: 'Bạch kim' };
+
 export default function MyPage() {
-    const navigate = useNavigate();
+    const navigate   = useNavigate();
     const { user, updateUserInfo } = useAuth();
     const fileInputRef = useRef(null);
-    const syncedRef   = useRef(!!user); // has info been set from user?
-    const snapshotRef = useRef(null);   // pre-edit snapshot for cancel
+    const syncedRef    = useRef(!!user);
+    const snapshotRef  = useRef(null);
 
-    const [isEditing, setIsEditing] = useState(false);
-    const [saving,    setSaving]    = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [errors,    setErrors]    = useState({});
+    const [isEditing,  setIsEditing]  = useState(false);
+    const [saving,     setSaving]     = useState(false);
+    const [uploading,  setUploading]  = useState(false);
+    const [errors,     setErrors]     = useState({});
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg,   setErrorMsg]   = useState('');
 
-    // Editable form state — initialized from user synchronously if available
     const [info, setInfo] = useState(() => userToInfo(user));
 
-    // If user wasn't in localStorage on mount, sync once when it arrives
+    // Sync once when user arrives from async auth
     useEffect(() => {
         if (user && !syncedRef.current) {
             syncedRef.current = true;
@@ -43,14 +54,12 @@ export default function MyPage() {
         }
     }, [user]);
 
-    // Redirect if not logged in
+    // Guard: redirect if not logged in
     useEffect(() => {
         if (!user && !localStorage.getItem('accessToken')) {
             navigate('/login');
         }
     }, [user, navigate]);
-
-    // ── Handlers ────────────────────────────────────────────────────────────────
 
     const handleEdit = () => {
         snapshotRef.current = { ...info };
@@ -67,7 +76,7 @@ export default function MyPage() {
         setErrorMsg('');
     };
 
-    const handleInfoChange = (e) => {
+    const handleChange = (e) => {
         const { name, value } = e.target;
         setInfo(prev => ({ ...prev, [name]: value }));
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
@@ -77,40 +86,41 @@ export default function MyPage() {
         if (isEditing) fileInputRef.current?.click();
     };
 
-    const handleAvatarChange = async (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setUploading(true);
         setErrorMsg('');
         try {
             const url = await uploadAvatarToCloudinary(file);
             setInfo(prev => ({ ...prev, avatarUrl: url }));
-            setSuccessMsg('Ảnh đã upload. Nhấn "Lưu" để cập nhật.');
-            setTimeout(() => setSuccessMsg(''), 4000);
+            setSuccessMsg('Ảnh đã tải lên. Nhấn Lưu để cập nhật hồ sơ.');
+            setTimeout(() => setSuccessMsg(''), 5000);
         } catch (err) {
             setErrorMsg(err.message || 'Upload ảnh thất bại');
         } finally {
             setUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
     const validate = () => {
         const e = {};
         if (!info.fullName.trim()) e.fullName = 'Họ tên là bắt buộc';
-        if (!info.phone.trim()) e.phone = 'Số điện thoại là bắt buộc';
-        else if (!/^\d{10}$/.test(info.phone.trim())) e.phone = 'Số điện thoại phải có 10 chữ số';
+        if (info.phone.trim() && !/^\d{10}$/.test(info.phone.trim())) {
+            e.phone = 'Số điện thoại phải có đúng 10 chữ số';
+        }
         return e;
     };
 
     const handleSave = async () => {
         const e = validate();
-        if (Object.keys(e).length > 0) { setErrors(e); return; }
+        if (Object.keys(e).length) { setErrors(e); return; }
 
         setErrors({});
         setSaving(true);
-        setErrorMsg('');
         setSuccessMsg('');
+        setErrorMsg('');
 
         try {
             const token = localStorage.getItem('accessToken');
@@ -121,31 +131,36 @@ export default function MyPage() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    full_name:    info.fullName,
-                    phone:        info.phone,
-                    avatar_url:   info.avatarUrl   || null,
-                    date_of_birth: info.dateOfBirth || null,
-                    gender:       info.gender       || null,
+                    full_name:     info.fullName.trim(),
+                    phone:         info.phone.trim()  || null,
+                    avatar_url:    info.avatarUrl      || null,
+                    date_of_birth: info.dateOfBirth    || null,
+                    gender:        info.gender         || null,
                 }),
             });
 
             const data = await res.json();
             if (!res.ok || !data.success) {
-                throw new Error(
-                    data.error?.details || data.error?.message || data.message || 'Cập nhật thất bại'
-                );
+                const msg =
+                    (Array.isArray(data.error?.details)
+                        ? data.error.details.map(d => d.message ?? d).join(', ')
+                        : data.error?.details) ||
+                    data.error?.message ||
+                    data.message ||
+                    `Cập nhật thất bại (${res.status})`;
+                throw new Error(msg);
             }
 
             updateUserInfo({
-                fullName:    info.fullName,
-                phone:       info.phone,
-                avatarUrl:   info.avatarUrl,
-                dateOfBirth: info.dateOfBirth,
-                gender:      info.gender,
+                fullName:    info.fullName.trim(),
+                phone:       info.phone.trim()  || null,
+                avatarUrl:   info.avatarUrl      || null,
+                dateOfBirth: info.dateOfBirth    || null,
+                gender:      info.gender         || null,
             });
             snapshotRef.current = { ...info };
             setIsEditing(false);
-            setSuccessMsg('Cập nhật thông tin thành công');
+            setSuccessMsg('Cập nhật thông tin thành công!');
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err) {
             setErrorMsg(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
@@ -154,113 +169,150 @@ export default function MyPage() {
         }
     };
 
-    // ── Loading state ────────────────────────────────────────────────────────────
-
     if (!user) {
         return (
-            <div className={checkoutStyles.page}>
-                <div className={checkoutStyles.container}>
-                    <div className={checkoutStyles.leftCol} style={{ textAlign: 'center' }}>
-                        <p>Đang tải thông tin...</p>
-                    </div>
-                </div>
+            <div className={styles.page}>
+                <div className={styles.loadingWrap}>Đang tải thông tin...</div>
             </div>
         );
     }
 
-    // ── Render ───────────────────────────────────────────────────────────────────
-
     return (
-        <div className={checkoutStyles.page}>
-            <div className={checkoutStyles.container}>
-                <div className={checkoutStyles.leftCol}>
+        <div className={styles.page}>
+            <div className={styles.card}>
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                />
 
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        onChange={handleAvatarChange}
-                        style={{ display: 'none' }}
-                    />
+                {/* Header */}
+                <div className={styles.cardHeader}>
+                    <h1 className={styles.pageTitle}>HỒ SƠ CÁ NHÂN</h1>
+                    {!isEditing && (
+                        <button className={styles.editBtn} onClick={handleEdit}>
+                            Chỉnh sửa
+                        </button>
+                    )}
+                </div>
 
-                    <h1 className={checkoutStyles.title}>THÔNG TIN CÁ NHÂN</h1>
+                {/* Toasts */}
+                {successMsg && (
+                    <div className={`${styles.toast} ${styles.toastSuccess}`}>
+                        <span>✓</span> {successMsg}
+                    </div>
+                )}
+                {errorMsg && (
+                    <div className={`${styles.toast} ${styles.toastError}`}>
+                        <span>✕</span> {errorMsg}
+                    </div>
+                )}
 
-                    {/* Avatar */}
-                    <div className={styles.avatarSection}>
+                <div className={styles.body}>
+                    {/* Left: avatar + account stats */}
+                    <div className={styles.avatarCol}>
                         <div
-                            className={`${styles.avatarContainer} ${isEditing ? styles.editable : ''}`}
+                            className={`${styles.avatarRing} ${isEditing ? styles.avatarRingEditable : ''}`}
                             onClick={handleAvatarClick}
-                            title={isEditing ? 'Nhấp để đổi ảnh đại diện' : ''}
+                            title={isEditing ? 'Nhấp để đổi ảnh đại diện' : undefined}
                         >
                             {info.avatarUrl ? (
-                                <img src={info.avatarUrl} alt="Avatar" className={styles.avatarImage} />
+                                <img src={info.avatarUrl} alt="avatar" className={styles.avatarImg} />
                             ) : (
-                                <div className={styles.avatarPlaceholder}>
-                                    <span className={styles.avatarInitial}>{getAvatarInitial(user)}</span>
+                                <div className={styles.avatarFallback}>
+                                    <span>{getAvatarInitial(user)}</span>
                                 </div>
                             )}
                             {isEditing && (
                                 <div className={styles.avatarOverlay}>
-                                    <span className={styles.editIcon}>✎</span>
+                                    {uploading
+                                        ? <span className={styles.spinIcon}>⟳</span>
+                                        : <span className={styles.cameraIcon}>📷</span>}
                                 </div>
                             )}
                         </div>
-                        {uploading && <div className={styles.uploadingText}>Đang upload...</div>}
+
+                        {uploading && <p className={styles.uploadNote}>Đang tải ảnh lên...</p>}
+
+                        <p className={styles.userName}>{user.fullName || user.email}</p>
+                        <p className={styles.userEmail}>{user.email}</p>
+
+                        <div className={styles.statsList}>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Hạng thành viên</span>
+                                <span className={styles.statValue}>
+                                    {TIER_LABELS[user.tier] || user.tier || 'Thành viên'}
+                                </span>
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Điểm tích lũy</span>
+                                <span className={styles.statValue}>{user.loyaltyPoints ?? 0}</span>
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Tham gia từ</span>
+                                <span className={styles.statValue}>
+                                    {user.createdAt
+                                        ? new Date(user.createdAt).toLocaleDateString('vi-VN')
+                                        : '—'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    {successMsg && <div className={styles.successMsg}>{successMsg}</div>}
-                    {errorMsg   && <div className={checkoutStyles.apiError}>{errorMsg}</div>}
+                    {/* Right: editable form */}
+                    <div className={styles.formCol}>
+                        <h3 className={styles.sectionLabel}>THÔNG TIN CÁ NHÂN</h3>
 
-                    <div className={checkoutStyles.formSection}>
-                        <h3 className={checkoutStyles.sectionTitle}>THÔNG TIN CÁ NHÂN</h3>
-
-                        <div className={checkoutStyles.fieldGroup}>
-                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Tên</label>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Họ tên</label>
                             <input
-                                className={`${checkoutStyles.input} ${errors.fullName ? checkoutStyles.inputError : ''}`}
+                                className={`${styles.input}${errors.fullName ? ' ' + styles.inputErr : ''}${!isEditing ? ' ' + styles.inputRO : ''}`}
                                 type="text"
                                 name="fullName"
-                                placeholder="Họ tên"
+                                placeholder="Nguyễn Văn A"
                                 value={info.fullName}
-                                onChange={handleInfoChange}
+                                onChange={handleChange}
                                 disabled={!isEditing}
                             />
-                            {errors.fullName && <span className={checkoutStyles.errorMsg}>{errors.fullName}</span>}
+                            {errors.fullName && <span className={styles.errMsg}>{errors.fullName}</span>}
                         </div>
 
-                        <div className={checkoutStyles.fieldGroup}>
-                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Số điện thoại</label>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Số điện thoại</label>
                             <input
-                                className={`${checkoutStyles.input} ${errors.phone ? checkoutStyles.inputError : ''}`}
+                                className={`${styles.input}${errors.phone ? ' ' + styles.inputErr : ''}${!isEditing ? ' ' + styles.inputRO : ''}`}
                                 type="tel"
                                 name="phone"
-                                placeholder="0123456789"
+                                placeholder="0912345678"
                                 value={info.phone}
-                                onChange={handleInfoChange}
+                                onChange={handleChange}
                                 disabled={!isEditing}
                             />
-                            {errors.phone && <span className={checkoutStyles.errorMsg}>{errors.phone}</span>}
+                            {errors.phone && <span className={styles.errMsg}>{errors.phone}</span>}
                         </div>
 
-                        <div className={checkoutStyles.row2}>
-                            <div className={checkoutStyles.fieldGroup}>
-                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Ngày sinh</label>
+                        <div className={styles.row2}>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Ngày sinh</label>
                                 <input
-                                    className={checkoutStyles.input}
+                                    className={`${styles.input}${!isEditing ? ' ' + styles.inputRO : ''}`}
                                     type="date"
                                     name="dateOfBirth"
                                     value={info.dateOfBirth}
-                                    onChange={handleInfoChange}
+                                    onChange={handleChange}
                                     disabled={!isEditing}
                                 />
                             </div>
-                            <div className={checkoutStyles.fieldGroup}>
-                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Giới tính</label>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Giới tính</label>
                                 <select
-                                    className={checkoutStyles.input}
+                                    className={`${styles.input} ${styles.select}${!isEditing ? ' ' + styles.inputRO : ''}`}
                                     name="gender"
                                     value={info.gender}
-                                    onChange={handleInfoChange}
+                                    onChange={handleChange}
                                     disabled={!isEditing}
                                 >
                                     <option value="">Chọn giới tính</option>
@@ -271,75 +323,56 @@ export default function MyPage() {
                             </div>
                         </div>
 
-                        <h3 className={`${checkoutStyles.sectionTitle} ${checkoutStyles.sectionTitleSpaced}`}>THÔNG TIN TÀI KHOẢN</h3>
+                        <h3 className={`${styles.sectionLabel} ${styles.sectionLabelMt}`}>THÔNG TIN TÀI KHOẢN</h3>
 
-                        <div className={checkoutStyles.fieldGroup}>
-                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Email</label>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Email</label>
                             <input
-                                className={checkoutStyles.input}
+                                className={`${styles.input} ${styles.inputRO}`}
                                 type="email"
                                 value={user.email || ''}
                                 disabled
-                                style={{ backgroundColor: '#f5f5f5' }}
                             />
                         </div>
 
-                        <div className={checkoutStyles.row2}>
-                            <div className={checkoutStyles.fieldGroup}>
-                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Hạng thành viên</label>
+                        <div className={styles.row2}>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Hạng thành viên</label>
                                 <input
-                                    className={checkoutStyles.input}
+                                    className={`${styles.input} ${styles.inputRO}`}
                                     type="text"
-                                    value={user.tier || 'N/A'}
+                                    value={TIER_LABELS[user.tier] || user.tier || 'Thành viên'}
                                     disabled
-                                    style={{ backgroundColor: '#f5f5f5' }}
                                 />
                             </div>
-                            <div className={checkoutStyles.fieldGroup}>
-                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Điểm tích lũy</label>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Điểm tích lũy</label>
                                 <input
-                                    className={checkoutStyles.input}
+                                    className={`${styles.input} ${styles.inputRO}`}
                                     type="text"
                                     value={user.loyaltyPoints ?? 0}
                                     disabled
-                                    style={{ backgroundColor: '#f5f5f5' }}
                                 />
                             </div>
                         </div>
 
-                        <div className={checkoutStyles.fieldGroup}>
-                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Tham gia từ</label>
-                            <input
-                                className={checkoutStyles.input}
-                                type="text"
-                                value={user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
-                                disabled
-                                style={{ backgroundColor: '#f5f5f5' }}
-                            />
-                        </div>
-
-                        {isEditing ? (
-                            <div style={{ display: 'flex', gap: '1rem' }}>
+                        {isEditing && (
+                            <div className={styles.actions}>
                                 <button
-                                    className={checkoutStyles.actionBtn}
+                                    className={styles.saveBtn}
                                     onClick={handleSave}
                                     disabled={saving || uploading}
                                 >
-                                    {saving ? 'Đang lưu...' : 'Lưu'}
+                                    {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                                 </button>
                                 <button
-                                    className={checkoutStyles.actionBtn}
+                                    className={styles.cancelBtn}
                                     onClick={handleCancel}
                                     disabled={saving}
-                                    style={{ background: '#666' }}
                                 >
                                     Huỷ
                                 </button>
                             </div>
-                        ) : (
-                            <button className={checkoutStyles.actionBtn} onClick={handleEdit}>
-                                Chỉnh sửa <span className={checkoutStyles.btnArrow}>→</span>
-                            </button>
                         )}
                     </div>
                 </div>
@@ -347,5 +380,3 @@ export default function MyPage() {
         </div>
     );
 }
-
-
