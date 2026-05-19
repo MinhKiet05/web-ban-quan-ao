@@ -3,9 +3,12 @@
  * @description Xử lý các chức năng quản lý thông tin profile người dùng
  */
 
+const path = require('path');
+const fs = require('fs').promises;
 const {
   findUserById,
   updateUserProfile,
+  updateUserAvatar,
 } = require("../model/user.model");
 const {
   createError,
@@ -116,6 +119,7 @@ async function updateCurrentUser(userId, userData) {
       address: userData.address,
       city: userData.city,
       postal_code: userData.postal_code || null,
+      avatar_url: userData.avatar_url || null,
     });
 
     if (!updatedUser) {
@@ -219,6 +223,60 @@ async function updateProfile({ id, full_name, date_of_birth, gender, email, phon
 }
 
 /**
+<<<<<<< HEAD
+ * Update user avatar
+ * @param {string} userId User ID
+ * @param {string} avatarUrl Avatar URL
+ * @returns {Object} Updated user
+ */
+async function updateAvatar(userId, avatarUrl) {
+  try {
+    if (!userId) {
+      throw createError(VALIDATION_ERRORS.MISSING_REQUIRED_FIELD, "User ID không tìm thấy");
+    }
+
+    if (!avatarUrl) {
+      throw createError(VALIDATION_ERRORS.MISSING_REQUIRED_FIELD, "Avatar URL là bắt buộc");
+    }
+
+    const existingUser = await findUserById(userId);
+    if (!existingUser) {
+      throw createError(USER_ERRORS.USER_NOT_FOUND);
+    }
+
+    // Delete old avatar file if exists
+    if (existingUser.avatar_url) {
+      try {
+        const oldAvatarPath = path.join(__dirname, '../../' + existingUser.avatar_url);
+        await fs.unlink(oldAvatarPath);
+      } catch (error) {
+        // Nếu không tìm thấy file cũ, không cần báo lỗi
+        console.warn('Warning: Could not delete old avatar file:', existingUser.avatar_url);
+      }
+    }
+
+    const updatedUser = await updateUserAvatar(userId, avatarUrl);
+
+    if (!updatedUser) {
+      throw createError(USER_ERRORS.USER_NOT_FOUND);
+    }
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      full_name: updatedUser.full_name,
+      first_name: updatedUser.first_name,
+      last_name: updatedUser.last_name,
+      phone: updatedUser.phone,
+      avatar_url: updatedUser.avatar_url,
+      updated_at: updatedUser.updated_at,
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Lấy thông tin profile
  * @param {string} id User ID
  */
@@ -262,4 +320,5 @@ module.exports = {
   updateProfile,
   getCurrentUser,
   updateCurrentUser,
+  updateAvatar,
 };
