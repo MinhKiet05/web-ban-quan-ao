@@ -1,148 +1,151 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+    ResponsiveContainer,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
+    AreaChart, Area,
+    PieChart, Pie, Legend,
+} from 'recharts';
 import styles from '../AdminDashboard.module.css';
 import { BASE_URL, fmt, STATUS_CONFIG } from './Shared.jsx';
 
-// ── SVG Bar Chart ──────────────────────────────────────────────────────────────
-function BarChart({ data, valueKey, labelKey, color = '#3b82f6', height = 120, formatVal }) {
-    if (!data || data.length === 0) return <EmptyChart />;
-    const max = Math.max(...data.map(d => +d[valueKey] || 0), 1);
-    const total = data.length;
-
-    // Fixed viewBox width so bars always fill the container proportionally
-    const SVG_W = 400;
-    const SVG_H = height + 44;
-    const PAD = 10;
-    const slotW = (SVG_W - PAD * 2) / total;
-    const BAR_W = Math.min(40, slotW * 0.65);
-    const barPad = (slotW - BAR_W) / 2;
-
+// ── Custom Tooltip: Doanh thu ──────────────────────────────────────────────────
+function RevenueTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null;
     return (
-        <div style={{ width: '100%' }}>
-            <svg width="100%" height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-                {[0.25, 0.5, 0.75, 1].map(t => (
-                    <line key={t} x1={PAD} x2={SVG_W - PAD}
-                        y1={height * (1 - t)} y2={height * (1 - t)}
-                        stroke="#f0f0f0" strokeWidth={1} />
-                ))}
-                {data.map((d, i) => {
-                    const val = +d[valueKey] || 0;
-                    const barH = Math.max((val / max) * height, val > 0 ? 2 : 0);
-                    const x = PAD + i * slotW + barPad;
-                    const y = height - barH;
-                    const midX = x + BAR_W / 2;
-                    const displayVal = formatVal ? formatVal(val) : val.toLocaleString('vi-VN');
-                    return (
-                        <g key={i}>
-                            <rect x={x} y={y} width={BAR_W} height={barH} fill={color} rx={3} opacity={0.85} />
-                            <text x={midX} y={height + 16} textAnchor="middle" fontSize={9.5} fill="#888">{d[labelKey]}</text>
-                            {val > 0 && (
-                                <text x={midX} y={y - 5} textAnchor="middle" fontSize={8.5} fill="#444" fontWeight="700">
-                                    {displayVal}
-                                </text>
-                            )}
-                        </g>
-                    );
-                })}
-            </svg>
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', fontSize: '0.82rem' }}>
+            <div style={{ fontWeight: 700, color: '#333', marginBottom: 4 }}>{label}</div>
+            {payload.map((p, i) => (
+                <div key={i} style={{ color: p.color }}>
+                    {p.name}: <strong>{fmt(p.value)}</strong>
+                </div>
+            ))}
+            {payload[0]?.payload?.orders != null && (
+                <div style={{ color: '#888', marginTop: 2 }}>{payload[0].payload.orders} đơn</div>
+            )}
         </div>
     );
 }
 
-// ── SVG Line/Area Chart ───────────────────────────────────────────────────────
-function LineChart({ data, valueKey, labelKey, color = '#10b981', height = 140, formatVal }) {
-    if (!data || data.length === 0) return <EmptyChart />;
-    const max = Math.max(...data.map(d => +d[valueKey] || 0), 1);
-    const W = 480;
-    const padL = 8, padR = 8, padT = 24, padB = 28;
-    const cW = W - padL - padR;
-    const cH = height - padT - padB;
-    const step = data.length > 1 ? cW / (data.length - 1) : cW;
-
-    const pts = data.map((d, i) => ({
-        x: padL + i * step,
-        y: padT + cH - ((+d[valueKey] || 0) / max) * cH,
-        val: +d[valueKey] || 0,
-        label: d[labelKey],
-    }));
-
-    const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
-    const area = `${pts[0].x},${padT + cH} ${polyline} ${pts[pts.length - 1].x},${padT + cH}`;
-
+// ── Custom Tooltip: Đơn giản ───────────────────────────────────────────────────
+function SimpleTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null;
+    const val = payload[0]?.value ?? 0;
     return (
-        <div style={{ width: '100%' }}>
-            <svg viewBox={`0 0 ${W} ${height}`} width="100%" height={height} preserveAspectRatio="none" style={{ display: 'block' }}>
-                <defs>
-                    <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-                        <stop offset="100%" stopColor={color} stopOpacity={0} />
-                    </linearGradient>
-                </defs>
-                {[0.25, 0.5, 0.75, 1].map(t => (
-                    <line key={t} x1={padL} x2={W - padR}
-                        y1={padT + cH * (1 - t)} y2={padT + cH * (1 - t)}
-                        stroke="#f0f0f0" strokeWidth={1} />
-                ))}
-                <polygon points={area} fill={`url(#grad-${color.replace('#','')})`} />
-                <polyline points={polyline} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
-                {pts.map((p, i) => (
-                    <g key={i}>
-                        <circle cx={p.x} cy={p.y} r={4} fill={color} stroke="#fff" strokeWidth={2} />
-                        <text x={p.x} y={height - 4} textAnchor="middle" fontSize={9.5} fill="#888">{p.label}</text>
-                    </g>
-                ))}
-            </svg>
-        </div>
-    );
-}
-
-// ── SVG Donut Chart (order status) ────────────────────────────────────────────
-function DonutChart({ slices }) {
-    const total = slices.reduce((s, d) => s + d.value, 0);
-    if (total === 0) return <EmptyChart />;
-    const R = 58, ri = 30, cx = 75, cy = 75;
-    let angle = -Math.PI / 2;
-
-    const paths = slices.filter(s => s.value > 0).map((s) => {
-        const ratio = s.value / total;
-        const sa = angle;
-        const ea = angle + ratio * 2 * Math.PI;
-        angle = ea;
-        const lg = ratio > 0.5 ? 1 : 0;
-        const x1 = cx + R * Math.cos(sa), y1 = cy + R * Math.sin(sa);
-        const x2 = cx + R * Math.cos(ea), y2 = cy + R * Math.sin(ea);
-        const xi1 = cx + ri * Math.cos(sa), yi1 = cy + ri * Math.sin(sa);
-        const xi2 = cx + ri * Math.cos(ea), yi2 = cy + ri * Math.sin(ea);
-        return {
-            d: `M${x1} ${y1} A${R} ${R} 0 ${lg} 1 ${x2} ${y2} L${xi2} ${yi2} A${ri} ${ri} 0 ${lg} 0 ${xi1} ${yi1}Z`,
-            color: s.color, label: s.label, value: s.value,
-            pct: Math.round(ratio * 100),
-        };
-    });
-
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-            <svg width={150} height={150} viewBox="0 0 150 150" style={{ flexShrink: 0 }}>
-                {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.88} />)}
-                <text x={cx} y={cy + 4} textAnchor="middle" fontSize={13} fontWeight="800" fill="#111">{total}</text>
-                <text x={cx} y={cy + 17} textAnchor="middle" fontSize={9} fill="#888">đơn hàng</text>
-            </svg>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                {paths.map((p, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
-                        <span style={{ width: 9, height: 9, borderRadius: 2, background: p.color, flexShrink: 0 }} />
-                        <span style={{ color: '#555', flex: 1 }}>{p.label}</span>
-                        <span style={{ fontWeight: 700, color: '#111' }}>{p.value}</span>
-                        <span style={{ color: '#aaa', minWidth: 32, textAlign: 'right' }}>{p.pct}%</span>
-                    </div>
-                ))}
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', fontSize: '0.82rem' }}>
+            <div style={{ fontWeight: 700, color: '#333', marginBottom: 4 }}>{label}</div>
+            <div style={{ color: payload[0]?.color || '#555' }}>
+                <strong>{val.toLocaleString('vi-VN')}</strong> người dùng mới
             </div>
         </div>
     );
 }
 
+// ── Custom Tooltip: Donut ──────────────────────────────────────────────────────
+function DonutTooltip({ active, payload }) {
+    if (!active || !payload?.length) return null;
+    const d = payload[0];
+    return (
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', fontSize: '0.82rem' }}>
+            <div style={{ color: d.payload.color, fontWeight: 700 }}>{d.name}</div>
+            <div>{d.value} đơn &nbsp;<span style={{ color: '#888' }}>({Math.round((d.payload.percent ?? 0) * 100)}%)</span></div>
+        </div>
+    );
+}
+
+// ── Revenue Bar Chart ──────────────────────────────────────────────────────────
+function RevenueBarChart({ data, color = '#3b82f6' }) {
+    if (!data?.length) return <EmptyChart />;
+    return (
+        <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 4 }} barCategoryGap="35%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#aaa' }} axisLine={false} tickLine={false} width={52} />
+                <Tooltip content={<RevenueTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} />
+                <Bar dataKey="revenue" name="Doanh thu" radius={[6, 6, 0, 0]} maxBarSize={64}>
+                    {data.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.85} />)}
+                </Bar>
+            </BarChart>
+        </ResponsiveContainer>
+    );
+}
+
+// ── User Growth Bar Chart ──────────────────────────────────────────────────────
+function UserBarChart({ data, color = '#8b5cf6' }) {
+    if (!data?.length) return <EmptyChart />;
+    return (
+        <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 4 }} barCategoryGap="35%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#aaa' }} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
+                <Tooltip content={<SimpleTooltip />} cursor={{ fill: 'rgba(139,92,246,0.06)' }} />
+                <Bar dataKey="new_users" name="Người dùng mới" radius={[6, 6, 0, 0]} maxBarSize={64}>
+                    {data.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.85} />)}
+                </Bar>
+            </BarChart>
+        </ResponsiveContainer>
+    );
+}
+
+// ── Revenue Area Chart (7 ngày) ────────────────────────────────────────────────
+function RevenueAreaChart({ data, color = '#10b981' }) {
+    if (!data?.length) return <EmptyChart />;
+    return (
+        <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 4 }}>
+                <defs>
+                    <linearGradient id="areaGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#aaa' }} axisLine={false} tickLine={false} width={52} />
+                <Tooltip content={<RevenueTooltip />} cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 2' }} />
+                <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke={color} strokeWidth={2.5} fill="url(#areaGreen)" dot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+            </AreaChart>
+        </ResponsiveContainer>
+    );
+}
+
+// ── Donut Chart (order status) ─────────────────────────────────────────────────
+function DonutChart({ slices }) {
+    const total = slices.reduce((s, d) => s + d.value, 0);
+    if (total === 0) return <EmptyChart />;
+
+    const RADIAN = Math.PI / 180;
+    const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+        if (percent < 0.05) return null;
+        const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+        const x = cx + r * Math.cos(-midAngle * RADIAN);
+        const y = cy + r * Math.sin(-midAngle * RADIAN);
+        return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={700}>{`${Math.round(percent * 100)}%`}</text>;
+    };
+
+    return (
+        <ResponsiveContainer width="100%" height={210}>
+            <PieChart>
+                <Pie data={slices} cx="42%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value" nameKey="label" labelLine={false} label={renderLabel} paddingAngle={2}>
+                    {slices.map((s, i) => <Cell key={i} fill={s.color} opacity={0.9} />)}
+                </Pie>
+                <Tooltip content={<DonutTooltip />} />
+                <Legend layout="vertical" align="right" verticalAlign="middle" iconType="square" iconSize={9}
+                    formatter={(value, entry) => (
+                        <span style={{ fontSize: '0.78rem', color: '#555' }}>
+                            {value} <strong style={{ color: '#111' }}>{entry.payload.value}</strong>
+                        </span>
+                    )}
+                />
+            </PieChart>
+        </ResponsiveContainer>
+    );
+}
+
 function EmptyChart() {
     return (
-        <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: '0.85rem' }}>
+        <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: '0.85rem' }}>
             Chưa có dữ liệu
         </div>
     );
@@ -176,26 +179,30 @@ export default function StatsView({ token }) {
     const [dash, setDash] = useState(null);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const authHeader = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
     useEffect(() => {
         setLoading(true);
+        setError(null);
         Promise.all([
             fetch(`${BASE_URL}/admin/dashboard`, { headers: authHeader() }).then(r => r.json()),
             fetch(`${BASE_URL}/admin/stats`,     { headers: authHeader() }).then(r => r.json()),
         ]).then(([d, s]) => {
             if (d.data)  setDash(d.data);
             if (s.data)  setStats(s.data);
+        }).catch(err => {
+            setError('Không thể tải dữ liệu thống kê');
+            console.error('Stats load error:', err);
         }).finally(() => setLoading(false));
     }, [authHeader]);
 
-    if (loading || !dash) {
-        return (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#aaa' }}>
-                Đang tải thống kê...
-            </div>
-        );
+    if (loading) {
+        return <div style={{ padding: '3rem', textAlign: 'center', color: '#aaa' }}>Đang tải thống kê...</div>;
+    }
+    if (error || !dash) {
+        return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>{error || 'Không có dữ liệu'}</div>;
     }
 
     const ps = stats?.product_stats || {};
@@ -205,7 +212,7 @@ export default function StatsView({ token }) {
         label: cfg.text,
         value: dash[`${key}_orders`] || 0,
         color: cfg.color,
-    }));
+    })).filter(s => s.value > 0);
 
     return (
         <div>
@@ -238,27 +245,9 @@ export default function StatsView({ token }) {
             </div>
 
             {/* ── Row: Revenue by month + Order status ───────────────── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <ChartSection title="Doanh thu theo tháng (6 tháng gần nhất)">
-                    <BarChart
-                        data={stats?.monthly_revenue ?? []}
-                        valueKey="revenue"
-                        labelKey="label"
-                        color="#3b82f6"
-                        height={120}
-                        formatVal={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`}
-                    />
-                    {stats?.monthly_revenue?.length > 0 && (
-                        <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.78rem', color: '#888' }}>
-                            {stats.monthly_revenue.map((m, i) => (
-                                <div key={i}>
-                                    <span style={{ fontWeight: 700, color: '#333' }}>{m.label}: </span>
-                                    <span>{fmt(m.revenue)}</span>
-                                    <span style={{ color: '#aaa' }}> ({m.orders} đơn)</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <RevenueBarChart data={stats?.monthly_revenue ?? []} color="#3b82f6" />
                 </ChartSection>
 
                 <ChartSection title="Trạng thái đơn hàng">
@@ -269,24 +258,11 @@ export default function StatsView({ token }) {
             {/* ── Row: Daily trend + User growth ─────────────────────── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <ChartSection title="Doanh thu 7 ngày gần nhất">
-                    <LineChart
-                        data={dash.revenue_chart ?? []}
-                        valueKey="revenue"
-                        labelKey="label"
-                        color="#10b981"
-                        height={110}
-                        formatVal={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`}
-                    />
+                    <RevenueAreaChart data={dash.revenue_chart ?? []} color="#10b981" />
                 </ChartSection>
 
                 <ChartSection title="Người dùng mới theo tháng">
-                    <BarChart
-                        data={stats?.user_growth ?? []}
-                        valueKey="new_users"
-                        labelKey="label"
-                        color="#8b5cf6"
-                        height={110}
-                    />
+                    <UserBarChart data={stats?.user_growth ?? []} color="#8b5cf6" />
                 </ChartSection>
             </div>
 
