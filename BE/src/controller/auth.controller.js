@@ -279,6 +279,8 @@ const AuthController = {
             phone: user.phone,
             role: user.role,
             avatarUrl: user.avatar_url,
+            dateOfBirth: user.date_of_birth,
+            gender: user.gender,
             tier: user.tier,
             loyaltyPoints: user.loyalty_points,
             createdAt: user.created_at
