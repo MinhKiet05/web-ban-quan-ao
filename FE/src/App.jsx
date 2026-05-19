@@ -15,7 +15,8 @@ import { ProductProvider } from './context/ProductContext.jsx';
 import NotFound from './pages/notFoundPage/NotFound.jsx';
 import SearchPage from './pages/searchPage/SearchPage.jsx';
 import OrdersPage from './pages/ordersPage/OrdersPage.jsx';
-import AdminDashboard from './pages/adminDashboard/AdminDashboard.jsx';
+import AdminLayout from './pages/adminDashboard/AdminLayout.jsx';
+import { StatsViewWrapper, OrdersViewWrapper, ProductsViewWrapper, UsersViewWrapper, InventoryViewWrapper } from './pages/adminDashboard/ViewWrappers.jsx';
 // Cấu trúc Layout để Header và Footer luôn hiển thị ở mọi trang
 import MyPage from './pages/myPage/MyPage.jsx';
 import ProtectedRoute from './components/protectedRoute/ProtectedRoute.jsx';
@@ -70,7 +71,14 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Route>
             {/* Admin — layout riêng, không có Header/Footer */}
-            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<StatsViewWrapper />} />
+              <Route path="stats" element={<StatsViewWrapper />} />
+              <Route path="orders" element={<OrdersViewWrapper />} />
+              <Route path="products" element={<ProductsViewWrapper />} />
+              <Route path="users" element={<UsersViewWrapper />} />
+              <Route path="inventory" element={<InventoryViewWrapper />} />
+            </Route>
           </Routes>
         </ProductProvider>
       </AuthProvider>
