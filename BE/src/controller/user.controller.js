@@ -97,6 +97,7 @@ const UserController = {
         address,
         city,
         postal_code,
+        avatar_url,
       } = req.body;
 
       const user = await updateCurrentUser(userId, {
@@ -109,6 +110,7 @@ const UserController = {
         address,
         city,
         postal_code,
+        avatar_url,
       });
 
       return res.status(HTTP_STATUS.OK).json({
