@@ -62,18 +62,6 @@ async function updateCurrentUser(userId, userData) {
       throw createError(VALIDATION_ERRORS.MISSING_REQUIRED_FIELD, "User ID không tìm thấy");
     }
 
-    const errs = [];
-    if (!userData.full_name) {
-      errs.push({ field: "full_name", message: "Họ tên là bắt buộc" });
-    }
-    if (!userData.phone) {
-      errs.push({ field: "phone", message: "Số điện thoại là bắt buộc" });
-    }
-
-    if (errs.length > 0) {
-      throw createValidationError(errs);
-    }
-
     const existingUser = await findUserById(userId);
     if (!existingUser) {
       throw createError(USER_ERRORS.USER_NOT_FOUND);
