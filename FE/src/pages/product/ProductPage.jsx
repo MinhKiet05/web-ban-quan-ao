@@ -1,31 +1,44 @@
-import ProductCard from '../../components/productCard/ProductCard';
 import styles from './ProductPage.module.css';
-
-const productList = [
-    {
-        id: 1,
-        imageUrl: 'https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=700&q=80',
-        category: 'Crewneck T-Shirt',
-        badge: '+6',
-        title: 'BASIC',
-        price: '199',
-    },
-];
+import ProductCard from '../../components/productCard/ProductCard';
+import { useProducts } from '../../context/ProductContext';
 
 export default function ProductPage() {
+    // Lấy dữ liệu products từ Context
+    const { products, loading, error } = useProducts();
+
+    // Hiển thị loading state
+    if (loading) {
+        return (
+            <div className={styles.productPage}>
+                <div className={styles.wrapper}>
+                    <p style={{ textAlign: 'center', padding: '2rem' }}>Đang tải sản phẩm...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Hiển thị error state
+    if (error) {
+        return (
+            <div className={styles.productPage}>
+                <div className={styles.wrapper}>
+                    <p style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>Lỗi: {error}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Hiển thị danh sách sản phẩm
     return (
         <div className={styles.productPage}>
             <div className={styles.wrapper}>
-                {productList.map((product) => (
-                    <ProductCard
-                        key={product.id}
-                        imageUrl={product.imageUrl}
-                        category={product.category}
-                        badge={product.badge}
-                        title={product.title}
-                        price={product.price}
-                    />
-                ))}
+                {products && products.length > 0 ? (
+                    products.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))
+                ) : (
+                    <p style={{ textAlign: 'center', padding: '2rem' }}>Không có sản phẩm nào</p>
+                )}
             </div>
         </div>
     );

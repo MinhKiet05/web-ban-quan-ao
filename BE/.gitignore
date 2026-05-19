@@ -48,6 +48,14 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Database scripts (keep only schema and yame_import)
+src/database/convert_yame_to_sql.py
+src/database/crawl_yame_v2.py
+src/database/fix_yame_import.py
+src/database/run_crawler_v2.py
+src/database/yame_crawled_v2.json
+src/database/README_YAME_CRAWLER_V2.md
 *~
 
 # Temporary files

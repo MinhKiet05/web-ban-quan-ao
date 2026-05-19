@@ -1,0 +1,10 @@
+/* Ẩn thanh cuộn cho Chrome, Safari và Opera */
+.noScrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Ẩn thanh cuộn cho IE, Edge và Firefox */
+.noScrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}

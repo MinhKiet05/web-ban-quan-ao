@@ -72,7 +72,7 @@ const AccountController = {
       ]);
     }
 
-    // TODO: Implement reset password logic
+    // TODO: Implement reset password logic  
     // - Verify token
     // - Update password
     // - Invalidate token

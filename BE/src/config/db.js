@@ -38,7 +38,7 @@ pool.on('error', (err) => {
 // Test connection on startup
 pool.connect()
     .then(client => {
-        console.log(' Database connected successfully');
+        console.log(' Database connected successfully', pool.options.database);
         client.release();
     })
     .catch(err => {

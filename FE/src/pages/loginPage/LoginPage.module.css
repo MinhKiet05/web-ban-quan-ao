@@ -1,5 +1,5 @@
 .container {
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 60px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -9,7 +9,6 @@
 
 .card {
     background: #fff;
-    border-radius: 12px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 420px;
@@ -46,7 +45,7 @@
     padding: 28px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
 }
 
 .inputGroup {
@@ -64,8 +63,8 @@
 .inputGroup input {
     padding: 11px 14px;
     border: 1px solid #ddd;
-    border-radius: 8px;
     font-size: 14px;
+    color: #1a1a1a;
     transition: border-color 0.2s;
     outline: none;
 }
@@ -74,15 +73,34 @@
     border-color: #1a1a1a;
 }
 
+.inputGroup input::placeholder {
+    color: #999;
+}
+
+/* Input khi có lỗi */
+.inputError {
+    border-color: #e53e3e !important;
+    background-color: #fff5f5;
+}
+
+/* Thông báo lỗi dưới input */
+.errorMessage {
+    display: block;
+    color: #e53e3e;
+    font-size: 12px;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
 .error {
     color: #e53e3e;
     font-size: 13px;
     text-align: center;
     background: #fff5f5;
     padding: 8px 12px;
-    border-radius: 6px;
     border: 1px solid #fed7d7;
     margin: 0;
+    margin-top: -8px;
 }
 
 .submitBtn {
@@ -91,12 +109,11 @@
     background: #1a1a1a;
     color: #fff;
     border: none;
-    border-radius: 8px;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
-    margin-top: 4px;
+    margin-top: 8px;
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -121,4 +138,24 @@
 
 .forgotPassword a:hover {
     text-decoration: underline;
+}
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}/* Ngăn chặn trình duyệt đổi màu nền khi Autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    /* Sử dụng box-shadow cực lớn để "che" đi màu nền mặc định của trình duyệt */
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    
+    /* Chỉnh lại màu chữ theo ý muốn */
+    -webkit-text-fill-color: #000000 !important;
+}
+
+/* Nếu bạn muốn giữ màu nền trắng mượt mà hơn */
+input:-webkit-autofill {
+    transition: background-color 5000s ease-in-out 0s;
 }

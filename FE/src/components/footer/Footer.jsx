@@ -1,12 +1,12 @@
 import styles from './Footer.module.css';
-import logo from '../../../public/logo-KHK.webp';
+import logo from '/logo-KHK.webp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faYoutube,
     faDiscord,
     faInstagram,
 } from '@fortawesome/free-brands-svg-icons';
-
+import { Link } from 'react-router-dom';
 export default function Footer() {
     return (
         <>
@@ -16,14 +16,14 @@ export default function Footer() {
                         <p>Cửa hàng thời trang KHK chuyên cung cấp các sản phẩm thời trang chất lượng cao với thiết kế hiện đại. </p>
                     </div>
                     <div className={styles.info}>
-                        <div className={styles.columnInfo}><h2>Link</h2>
+                        <div className={styles.columnInfo}><h2>Liên kết</h2>
                             <ul>
-                                <li><a href="/">Home</a></li>
-                                <li><a href="/products">Products</a></li>
-                                <li><a href="/about-us">About Us</a></li>
+                                <li><Link to="/">Trang chủ</Link></li>
+                                <li><Link to="/products">Sản phẩm</Link></li>
+                                <li><Link to="/about-us">Về chúng tôi</Link></li>
                             </ul>
                         </div>
-                        <div className={styles.columnInfo}><h2>Our team</h2>
+                        <div className={styles.columnInfo}><h2>Đội ngũ</h2>
                             <ul>
                                 <li>
                                     <a href="https://github.com/MinhKiet05" target="_blank" rel="noopener noreferrer">
@@ -42,7 +42,7 @@ export default function Footer() {
                                 </li>
                             </ul>
                         </div>
-                        <div className={styles.columnInfo}><h2>Contact</h2>
+                        <div className={styles.columnInfo}><h2>Liên hệ</h2>
                             <ul>
                                 <li><a href="tel:0123456789">0987654321</a></li>
                                 <li><a href="mailto:info@khkfashion.com">info@khkfashion.com</a></li>
@@ -59,6 +59,7 @@ export default function Footer() {
             </footer>
             <div className={styles.copyright}>
                 <p>&copy; 2023 KHK Fashion. All rights reserved.</p>
+                <p>Disclaimer: This website is for educational purposes only. All product information and images are used for demonstration. No commercial transactions are processed.</p>
             </div>
         </>
 
