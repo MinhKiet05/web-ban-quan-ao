@@ -112,18 +112,10 @@ const updateUserProfile = async (userData) => {
   try {
     const { 
       id, 
-      full_name, 
-      first_name,
-      last_name,
-      date_of_birth, 
-      gender, 
-      email, 
+      full_name,
+      date_of_birth,
+      gender,
       phone,
-      country,
-      state,
-      address,
-      city,
-      postal_code,
       avatar_url
     } = userData;
 
@@ -137,38 +129,22 @@ const updateUserProfile = async (userData) => {
 
     // Build dynamic update query based on provided fields
     const result = await query(
-      `UPDATE users SET 
-         full_name = COALESCE($1, full_name),
-         first_name = COALESCE($2, first_name),
-         last_name = COALESCE($3, last_name),
-         date_of_birth = COALESCE($4, date_of_birth),
-         gender = COALESCE($5, gender),
-         email = COALESCE($6, email),
-         phone = COALESCE($7, phone),
-         country = COALESCE($8, country),
-         state = COALESCE($9, state),
-         address = COALESCE($10, address),
-         city = COALESCE($11, city),
-         postal_code = COALESCE($12, postal_code),
-         avatar_url = COALESCE($13, avatar_url),
-         updated_at = NOW()
-         WHERE id = $14
-         RETURNING *`,
+      `UPDATE users SET
+         full_name     = COALESCE($1, full_name),
+         date_of_birth = COALESCE($2, date_of_birth),
+         gender        = COALESCE($3, gender),
+         phone         = COALESCE($4, phone),
+         avatar_url    = COALESCE($5, avatar_url),
+         updated_at    = NOW()
+       WHERE id = $6
+       RETURNING *`,
       [
-        full_name, 
-        first_name,
-        last_name,
-        date_of_birth, 
-        gender, 
-        email, 
-        phone,
-        country,
-        state,
-        address,
-        city,
-        postal_code,
-        avatar_url,
-        id
+        full_name     ?? null,
+        date_of_birth ?? null,
+        gender        ?? null,
+        phone         ?? null,
+        avatar_url    ?? null,
+        id,
       ],
     );
 

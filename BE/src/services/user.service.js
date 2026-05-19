@@ -49,7 +49,7 @@ async function getCurrentUser(userId) {
     if (error.isOperational) {
       throw error;
     }
-    throw createError(DB_ERRORS);
+    throw createError(DB_ERRORS.QUERY_FAILED);
   }
 }
 
@@ -97,7 +97,7 @@ async function updateCurrentUser(userId, userData) {
     if (error.isOperational) {
       throw error;
     }
-    throw createError(DB_ERRORS);
+    throw createError(DB_ERRORS.QUERY_FAILED);
   }
 }
 
@@ -258,7 +258,7 @@ async function getProfile(id) {
     if (error.isOperational) {
       throw error;
     }
-    throw createError(DB_ERRORS);
+    throw createError(DB_ERRORS.QUERY_FAILED);
   }
 }
 
