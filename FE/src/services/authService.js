@@ -6,7 +6,7 @@
 
 import apiClient from './apiClient';
 
-const BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 export const authService = {
   /**

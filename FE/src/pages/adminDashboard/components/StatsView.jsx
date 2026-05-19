@@ -3,34 +3,40 @@ import styles from '../AdminDashboard.module.css';
 import { BASE_URL, fmt, STATUS_CONFIG } from './Shared.jsx';
 
 // ── SVG Bar Chart ──────────────────────────────────────────────────────────────
-function BarChart({ data, valueKey, labelKey, color = '#3b82f6', height = 160, formatVal }) {
+function BarChart({ data, valueKey, labelKey, color = '#3b82f6', height = 120, formatVal }) {
     if (!data || data.length === 0) return <EmptyChart />;
     const max = Math.max(...data.map(d => +d[valueKey] || 0), 1);
     const total = data.length;
-    const BAR_W = 28;
-    const GAP = total > 8 ? 8 : 16;
-    const svgW = total * (BAR_W + GAP) + 20;
+
+    // Fixed viewBox width so bars always fill the container proportionally
+    const SVG_W = 400;
+    const SVG_H = height + 44;
+    const PAD = 10;
+    const slotW = (SVG_W - PAD * 2) / total;
+    const BAR_W = Math.min(40, slotW * 0.65);
+    const barPad = (slotW - BAR_W) / 2;
 
     return (
-        <div style={{ width: '100%', overflowX: 'auto' }}>
-            <svg width="100%" viewBox={`0 0 ${svgW} ${height + 44}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
+        <div style={{ width: '100%' }}>
+            <svg width="100%" height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
                 {[0.25, 0.5, 0.75, 1].map(t => (
-                    <line key={t} x1={10} x2={svgW - 10}
+                    <line key={t} x1={PAD} x2={SVG_W - PAD}
                         y1={height * (1 - t)} y2={height * (1 - t)}
                         stroke="#f0f0f0" strokeWidth={1} />
                 ))}
                 {data.map((d, i) => {
                     const val = +d[valueKey] || 0;
                     const barH = Math.max((val / max) * height, val > 0 ? 2 : 0);
-                    const x = 10 + i * (BAR_W + GAP);
+                    const x = PAD + i * slotW + barPad;
                     const y = height - barH;
+                    const midX = x + BAR_W / 2;
                     const displayVal = formatVal ? formatVal(val) : val.toLocaleString('vi-VN');
                     return (
                         <g key={i}>
                             <rect x={x} y={y} width={BAR_W} height={barH} fill={color} rx={3} opacity={0.85} />
-                            <text x={x + BAR_W / 2} y={height + 16} textAnchor="middle" fontSize={9.5} fill="#888">{d[labelKey]}</text>
+                            <text x={midX} y={height + 16} textAnchor="middle" fontSize={9.5} fill="#888">{d[labelKey]}</text>
                             {val > 0 && (
-                                <text x={x + BAR_W / 2} y={y - 5} textAnchor="middle" fontSize={8.5} fill="#444" fontWeight="700">
+                                <text x={midX} y={y - 5} textAnchor="middle" fontSize={8.5} fill="#444" fontWeight="700">
                                     {displayVal}
                                 </text>
                             )}
@@ -64,7 +70,7 @@ function LineChart({ data, valueKey, labelKey, color = '#10b981', height = 140, 
 
     return (
         <div style={{ width: '100%' }}>
-            <svg viewBox={`0 0 ${W} ${height}`} width="100%" preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
+            <svg viewBox={`0 0 ${W} ${height}`} width="100%" height={height} preserveAspectRatio="none" style={{ display: 'block' }}>
                 <defs>
                     <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={color} stopOpacity={0.22} />
@@ -239,7 +245,7 @@ export default function StatsView({ token }) {
                         valueKey="revenue"
                         labelKey="label"
                         color="#3b82f6"
-                        height={170}
+                        height={120}
                         formatVal={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`}
                     />
                     {stats?.monthly_revenue?.length > 0 && (
@@ -268,7 +274,7 @@ export default function StatsView({ token }) {
                         valueKey="revenue"
                         labelKey="label"
                         color="#10b981"
-                        height={150}
+                        height={110}
                         formatVal={v => v >= 1e6 ? `${(v / 1e6).toFixed(1)}tr` : `${(v / 1e3).toFixed(0)}k`}
                     />
                 </ChartSection>
@@ -279,7 +285,7 @@ export default function StatsView({ token }) {
                         valueKey="new_users"
                         labelKey="label"
                         color="#8b5cf6"
-                        height={150}
+                        height={110}
                     />
                 </ChartSection>
             </div>

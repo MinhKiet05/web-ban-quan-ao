@@ -6,7 +6,7 @@ import { getAvatarInitial } from '../../utils/avatarUtils';
 import checkoutStyles from '../checkoutPage/CheckoutPage.module.css';
 import styles from './MyPage.module.css';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 export default function MyPage() {
     const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function MyPage() {
         setInfo({
             fullName: user.fullName || '',
             phone: user.phone || '',
-            avatarUrl: user.avatar_url || '',
+            avatarUrl: user.avatarUrl || '',
             dateOfBirth: user.dateOfBirth || '',
             gender: user.gender || '',
         });
@@ -56,7 +56,7 @@ export default function MyPage() {
             email: user.email || '',
             tier: user.tier || '',
             loyaltyPoints: user.loyaltyPoints || 0,
-            createdAt: user.created_at || '',
+            createdAt: user.createdAt || '',
         });
 
         setLoading(false);
@@ -159,8 +159,11 @@ export default function MyPage() {
             setIsEditing(false);
             
             updateUserInfo({
-                full_name: info.fullName,
-                avatar_url: info.avatarUrl
+                fullName: info.fullName,
+                phone: info.phone,
+                avatarUrl: info.avatarUrl,
+                dateOfBirth: info.dateOfBirth,
+                gender: info.gender,
             });
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err) {
