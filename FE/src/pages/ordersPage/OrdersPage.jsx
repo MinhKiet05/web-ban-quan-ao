@@ -220,7 +220,7 @@ function OrderDetail({ orderId, token, onClose, onCancelled }) {
                                     <div className={styles.infoItem}>
                                         <div className={styles.infoKey}>Trạng thái thanh toán</div>
                                         <div className={styles.infoVal} style={{ color: order.payment_status === 'paid' ? '#10b981' : '#f59e0b' }}>
-                                            {order.payment_status === 'paid' ? '✅ Đã thanh toán' : '⏳ Chờ thanh toán'}
+                                            {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
                                         </div>
                                     </div>
                                 )}
