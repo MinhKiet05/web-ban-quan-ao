@@ -114,6 +114,53 @@ const errorHandler = (err, req, res, next) => {
     processedError = result.error;
     statusCode = result.statusCode;
   }
+  // Xử lý PostgreSQL errors
+  else if (err.code === '23505') {
+    const result = createErrorResponse(
+      'DUPLICATE_ENTRY',
+      'Dữ liệu đã tồn tại (trùng lặp)',
+      HTTP_STATUS.CONFLICT
+    );
+    processedError = result.error;
+    statusCode = result.statusCode;
+  }
+  else if (err.code === '23502') {
+    const result = createErrorResponse(
+      'VALIDATION_ERROR',
+      'Trường bắt buộc không được để trống',
+      HTTP_STATUS.BAD_REQUEST,
+      err.column ? [{ field: err.column, message: `${err.column} là bắt buộc` }] : null
+    );
+    processedError = result.error;
+    statusCode = result.statusCode;
+  }
+  else if (err.code === '42703') {
+    const result = createErrorResponse(
+      'DATABASE_ERROR',
+      process.env.NODE_ENV === 'production' ? 'Lỗi cơ sở dữ liệu' : `Cột không tồn tại: ${err.message}`,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
+    processedError = result.error;
+    statusCode = result.statusCode;
+  }
+  else if (err.code === '22001') {
+    const result = createErrorResponse(
+      'VALIDATION_ERROR',
+      'Dữ liệu vượt quá độ dài cho phép',
+      HTTP_STATUS.BAD_REQUEST
+    );
+    processedError = result.error;
+    statusCode = result.statusCode;
+  }
+  else if (err.code?.startsWith('08')) {
+    const result = createErrorResponse(
+      'DB_CONNECTION_FAILED',
+      'Kết nối cơ sở dữ liệu thất bại',
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
+    processedError = result.error;
+    statusCode = result.statusCode;
+  }
   // Xử lý Multer errors (file upload)
   else if (err.name === 'MulterError') {
     let message = 'Lỗi upload file';

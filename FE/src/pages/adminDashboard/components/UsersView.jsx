@@ -94,6 +94,15 @@ export default function UsersView({ token }) {
                     />
                     <button className={styles.actionBtn} style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem' }} onClick={() => setSearch(searchInput)}>Tìm</button>
                 </div>
+                <button
+                    className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+                    style={{ padding: '0.3rem 0.8rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                    onClick={fetchUsers}
+                    disabled={loading}
+                    title="Tải lại danh sách người dùng"
+                >
+                    {loading ? '...' : '↻ Làm mới'}
+                </button>
             </div>
 
             <div className={styles.section}>

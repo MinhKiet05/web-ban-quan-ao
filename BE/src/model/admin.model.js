@@ -174,9 +174,9 @@ const getAdminOrderDetail = async (order_id) => {
 
 /**
  * Cập nhật trạng thái đơn hàng (admin)
+ * Khi completed: đồng thời recalculate total_spent / total_orders của user (idempotent)
  */
 const updateOrderStatus = async (order_id, status, note = null) => {
-    // Xác định timestamp column tương ứng
     const timestampMap = {
         confirmed:  'confirmed_at',
         packing:    'packed_at',
@@ -189,7 +189,7 @@ const updateOrderStatus = async (order_id, status, note = null) => {
     const tsCol = timestampMap[status];
     const tsSnippet = tsCol ? `, ${tsCol} = NOW()` : '';
 
-    const sql = `
+    const updateSql = `
         UPDATE orders
         SET status = $1, updated_at = NOW()${tsSnippet}
             ${note ? `, cancellation_reason = $3` : ''}
@@ -197,8 +197,31 @@ const updateOrderStatus = async (order_id, status, note = null) => {
         RETURNING *
     `;
     const values = note ? [status, order_id, note] : [status, order_id];
-    const result = await query(sql, values);
-    return result.rows[0] || null;
+    const result = await query(updateSql, values);
+    const order = result.rows[0] || null;
+
+    // Khi hoàn thành đơn: cập nhật lại total_spent + total_orders cho user
+    // Dùng SET (recalculate) thay vì INCREMENT để idempotent — an toàn kể cả khi trigger DB đã chạy
+    if (order && order.user_id && status === 'completed') {
+        await query(`
+            UPDATE users
+            SET
+                total_spent  = (
+                    SELECT COALESCE(SUM(total), 0)
+                    FROM orders
+                    WHERE user_id = $1 AND status NOT IN ('cancelled', 'refunded')
+                ),
+                total_orders = (
+                    SELECT COUNT(*)::int
+                    FROM orders
+                    WHERE user_id = $1 AND status NOT IN ('cancelled', 'refunded')
+                ),
+                updated_at = NOW()
+            WHERE id = $1
+        `, [order.user_id]);
+    }
+
+    return order;
 };
 
 /**

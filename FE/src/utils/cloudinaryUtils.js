@@ -5,9 +5,8 @@
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_API_KEY = import.meta.env.VITE_CLOUDINARY_API_KEY;
-// For signature generation, always use local backend if available, fallback to production
-const SIGNATURE_API_URL = 'http://localhost:3000/api';
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+const SIGNATURE_API_URL = import.meta.env.VITE_API_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 /**
  * Upload avatar image to Cloudinary
