@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import styles from '../AdminDashboard.module.css';
 
-export const BASE_URL = 'http://localhost:3000/api';
+export const BASE_URL = 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
 export const STATUS_CONFIG = {
     pending:    { text: 'Chờ xử lý',      color: '#f59e0b' },
