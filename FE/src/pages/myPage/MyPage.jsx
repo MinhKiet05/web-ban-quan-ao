@@ -8,11 +8,6 @@ import styles from './MyPage.module.css';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://web-ban-quan-ao-9s0d.onrender.com/api';
 
-const COUNTRIES = [
-    'Vietnam', 'United States', 'United Kingdom', 'France', 'Germany',
-    'Japan', 'South Korea', 'Australia', 'Canada', 'Singapore',
-];
-
 export default function MyPage() {
     const navigate = useNavigate();
     const { user, updateUserInfo } = useAuth();
@@ -27,89 +22,51 @@ export default function MyPage() {
     const [errorMsg, setErrorMsg] = useState('');
 
     const [info, setInfo] = useState({
-        email: '',
+        fullName: '',
         phone: '',
-        firstName: '',
-        lastName: '',
-        country: '',
-        state: '',
-        address: '',
-        city: '',
-        postalCode: '',
         avatarUrl: '',
+        dateOfBirth: '',
+        gender: '',
     });
 
-    // Fetch user info
+    const [displayInfo, setDisplayInfo] = useState({
+        email: '',
+        tier: '',
+        loyaltyPoints: 0,
+        createdAt: '',
+    });
+
+    // Initialize data from AuthContext
     useEffect(() => {
         if (!user) {
             navigate('/login');
             return;
         }
         
-        fetchUserInfo();
+        // Map user data từ AuthContext directly
+        setInfo({
+            fullName: user.fullName || '',
+            phone: user.phone || '',
+            avatarUrl: user.avatar_url || '',
+            dateOfBirth: user.dateOfBirth || '',
+            gender: user.gender || '',
+        });
+
+        setDisplayInfo({
+            email: user.email || '',
+            tier: user.tier || '',
+            loyaltyPoints: user.loyaltyPoints || 0,
+            createdAt: user.created_at || '',
+        });
+
+        setLoading(false);
     }, [user, navigate]);
-
-    const fetchUserInfo = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('accessToken');
-            
-            if (!token) {
-                setErrorMsg('Vui lòng đăng nhập lại');
-                navigate('/login');
-                return;
-            }
-
-            const response = await fetch(`${BASE_URL}/users/me`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Không thể tải thông tin người dùng');
-            }
-
-            const data = await response.json();
-            
-            if (data.success && data.data) {
-                const userData = data.data;
-                
-                // Parse full_name into first_name and last_name
-                const [firstName, ...lastNameParts] = (userData.full_name || '').split(' ');
-                const lastName = lastNameParts.join(' ') || '';
-                
-                setInfo({
-                    email: userData.email || '',
-                    phone: userData.phone || '',
-                    firstName: userData.first_name || firstName || '',
-                    lastName: userData.last_name || lastName || '',
-                    country: userData.country || '',
-                    state: userData.state || '',
-                    address: userData.address || '',
-                    city: userData.city || '',
-                    postalCode: userData.postal_code || '',
-                    avatarUrl: userData.avatar_url || '',
-                });
-            }
-        } catch (err) {
-            setErrorMsg(err.message || 'Có lỗi xảy ra');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const validateInfo = () => {
         const e = {};
-        if (!info.email.trim()) e.email = 'Email là bắt buộc';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email)) e.email = 'Email không hợp lệ';
+        if (!info.fullName.trim()) e.fullName = 'Họ tên là bắt buộc';
         if (!info.phone.trim()) e.phone = 'Số điện thoại là bắt buộc';
         else if (!/^\d{10}$/.test(info.phone)) e.phone = 'Số điện thoại phải có 10 chữ số';
-        if (!info.firstName.trim()) e.firstName = 'Họ là bắt buộc';
-        if (!info.lastName.trim()) e.lastName = 'Tên là bắt buộc';
-        if (!info.country) e.country = 'Quốc gia là bắt buộc';
-        if (!info.address.trim()) e.address = 'Địa chỉ là bắt buộc';
-        if (!info.city.trim()) e.city = 'Thành phố là bắt buộc';
         return e;
     };
 
@@ -171,16 +128,11 @@ export default function MyPage() {
             const token = localStorage.getItem('accessToken');
             
             const payload = {
-                email: info.email,
+                full_name: info.fullName,
                 phone: info.phone,
-                first_name: info.firstName,
-                last_name: info.lastName,
-                country: info.country,
-                state: info.state,
-                address: info.address,
-                city: info.city,
-                postal_code: info.postalCode,
                 avatar_url: info.avatarUrl || null,
+                date_of_birth: info.dateOfBirth || null,
+                gender: info.gender || null,
             };
 
             console.log('Sending payload:', payload);
@@ -196,21 +148,18 @@ export default function MyPage() {
 
             const data = await response.json();
             console.log('Save response:', { status: response.status, data });
+            console.log('Full error data:', JSON.stringify(data, null, 2));
 
             if (!response.ok || !data.success) {
-                // More detailed error message
-                const errorMsg = data.error?.details || data.error?.message || data.message || 'Cập nhật thông tin thất bại';
+                const errorMsg = data.error?.details || data.error?.message || data.message || data.error || 'Cập nhật thông tin thất bại';
                 throw new Error(errorMsg);
             }
 
             setSuccessMsg('Cập nhật thông tin thành công');
             setIsEditing(false);
             
-            // Update AuthContext with new user info - ONLY after successful save
             updateUserInfo({
-                full_name: `${info.firstName} ${info.lastName}`,
-                firstName: info.firstName,
-                lastName: info.lastName,
+                full_name: info.fullName,
                 avatar_url: info.avatarUrl
             });
             setTimeout(() => setSuccessMsg(''), 3000);
@@ -294,120 +243,108 @@ export default function MyPage() {
 
                     {/* Form Section */}
                     <div className={checkoutStyles.formSection}>
-                        <h3 className={checkoutStyles.sectionTitle}>CONTACT INFO</h3>
+                        <h3 className={checkoutStyles.sectionTitle}>THÔNG TIN CÁ NHÂN</h3>
+                        
+                        {/* Editable Fields */}
                         <div className={checkoutStyles.fieldGroup}>
+                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Tên</label>
                             <input
-                                className={`${checkoutStyles.input} ${errors.email ? checkoutStyles.inputError : ''}`}
-                                type="email"
-                                name="email"
-                                placeholder="Email"
-                                value={info.email}
-                                disabled={true}
+                                className={`${checkoutStyles.input} ${errors.fullName ? checkoutStyles.inputError : ''}`}
+                                type="text"
+                                name="fullName"
+                                placeholder="Họ tên"
+                                value={info.fullName}
+                                onChange={handleInfoChange}
+                                disabled={!isEditing}
                             />
-                            {errors.email && <span className={checkoutStyles.errorMsg}>{errors.email}</span>}
+                            {errors.fullName && <span className={checkoutStyles.errorMsg}>{errors.fullName}</span>}
                         </div>
                         <div className={checkoutStyles.fieldGroup}>
+                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Số điện thoại</label>
                             <input
                                 className={`${checkoutStyles.input} ${errors.phone ? checkoutStyles.inputError : ''}`}
                                 type="tel"
                                 name="phone"
-                                placeholder="Phone"
+                                placeholder="0123456789"
                                 value={info.phone}
                                 onChange={handleInfoChange}
                                 disabled={!isEditing}
                             />
                             {errors.phone && <span className={checkoutStyles.errorMsg}>{errors.phone}</span>}
                         </div>
-
-                        <h3 className={`${checkoutStyles.sectionTitle} ${checkoutStyles.sectionTitleSpaced}`}>SHIPPING ADDRESS</h3>
                         <div className={checkoutStyles.row2}>
                             <div className={checkoutStyles.fieldGroup}>
+                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Ngày sinh</label>
                                 <input
-                                    className={`${checkoutStyles.input} ${errors.firstName ? checkoutStyles.inputError : ''}`}
-                                    type="text"
-                                    name="firstName"
-                                    placeholder="First Name"
-                                    value={info.firstName}
+                                    className={checkoutStyles.input}
+                                    type="date"
+                                    name="dateOfBirth"
+                                    value={info.dateOfBirth}
                                     onChange={handleInfoChange}
                                     disabled={!isEditing}
                                 />
-                                {errors.firstName && <span className={checkoutStyles.errorMsg}>{errors.firstName}</span>}
                             </div>
                             <div className={checkoutStyles.fieldGroup}>
-                                <input
-                                    className={`${checkoutStyles.input} ${errors.lastName ? checkoutStyles.inputError : ''}`}
-                                    type="text"
-                                    name="lastName"
-                                    placeholder="Last Name"
-                                    value={info.lastName}
+                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Giới tính</label>
+                                <select
+                                    className={checkoutStyles.input}
+                                    name="gender"
+                                    value={info.gender}
                                     onChange={handleInfoChange}
                                     disabled={!isEditing}
-                                />
-                                {errors.lastName && <span className={checkoutStyles.errorMsg}>{errors.lastName}</span>}
+                                >
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="male">Nam</option>
+                                    <option value="female">Nữ</option>
+                                    <option value="other">Khác</option>
+                                </select>
                             </div>
                         </div>
+
+                        <h3 className={`${checkoutStyles.sectionTitle} ${checkoutStyles.sectionTitleSpaced}`}>THÔNG TIN TÀI KHOẢN</h3>
+                        
+                        {/* Read-only Fields */}
                         <div className={checkoutStyles.fieldGroup}>
-                            <select
-                                className={`${checkoutStyles.input} ${checkoutStyles.select} ${errors.country ? checkoutStyles.inputError : ''}`}
-                                name="country"
-                                value={info.country}
-                                onChange={handleInfoChange}
-                                disabled={!isEditing}
-                            >
-                                <option value="">Country</option>
-                                {COUNTRIES.map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                            {errors.country && <span className={checkoutStyles.errorMsg}>{errors.country}</span>}
-                        </div>
-                        <div className={checkoutStyles.fieldGroup}>
+                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Email</label>
                             <input
                                 className={checkoutStyles.input}
-                                type="text"
-                                name="state"
-                                placeholder="State / Region"
-                                value={info.state}
-                                onChange={handleInfoChange}
-                                disabled={!isEditing}
+                                type="email"
+                                value={displayInfo.email}
+                                disabled={true}
+                                style={{ backgroundColor: '#f5f5f5' }}
                             />
-                        </div>
-                        <div className={checkoutStyles.fieldGroup}>
-                            <input
-                                className={`${checkoutStyles.input} ${errors.address ? checkoutStyles.inputError : ''}`}
-                                type="text"
-                                name="address"
-                                placeholder="Address"
-                                value={info.address}
-                                onChange={handleInfoChange}
-                                disabled={!isEditing}
-                            />
-                            {errors.address && <span className={checkoutStyles.errorMsg}>{errors.address}</span>}
                         </div>
                         <div className={checkoutStyles.row2}>
                             <div className={checkoutStyles.fieldGroup}>
-                                <input
-                                    className={`${checkoutStyles.input} ${errors.city ? checkoutStyles.inputError : ''}`}
-                                    type="text"
-                                    name="city"
-                                    placeholder="City"
-                                    value={info.city}
-                                    onChange={handleInfoChange}
-                                    disabled={!isEditing}
-                                />
-                                {errors.city && <span className={checkoutStyles.errorMsg}>{errors.city}</span>}
-                            </div>
-                            <div className={checkoutStyles.fieldGroup}>
+                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Hạng thành viên</label>
                                 <input
                                     className={checkoutStyles.input}
                                     type="text"
-                                    name="postalCode"
-                                    placeholder="Postal Code"
-                                    value={info.postalCode}
-                                    onChange={handleInfoChange}
-                                    disabled={!isEditing}
+                                    value={displayInfo.tier || 'N/A'}
+                                    disabled={true}
+                                    style={{ backgroundColor: '#f5f5f5' }}
                                 />
                             </div>
+                            <div className={checkoutStyles.fieldGroup}>
+                                <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Điểm tích lũy</label>
+                                <input
+                                    className={checkoutStyles.input}
+                                    type="text"
+                                    value={displayInfo.loyaltyPoints || 0}
+                                    disabled={true}
+                                    style={{ backgroundColor: '#f5f5f5' }}
+                                />
+                            </div>
+                        </div>
+                        <div className={checkoutStyles.fieldGroup}>
+                            <label style={{ fontSize: '14px', color: '#666', marginBottom: '5px', display: 'block' }}>Tham gia từ</label>
+                            <input
+                                className={checkoutStyles.input}
+                                type="text"
+                                value={displayInfo.createdAt ? new Date(displayInfo.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                                disabled={true}
+                                style={{ backgroundColor: '#f5f5f5' }}
+                            />
                         </div>
 
                         {/* Edit/Save Button */}

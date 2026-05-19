@@ -21,7 +21,7 @@ const { createValidationError } = require("../constants/errors");
 /**
  * Get current user profile (from token)
  * @param {string} userId User Id from token
- * @returns {User} User object
+ * @returns {User} User object with essential fields only
  */
 async function getCurrentUser(userId) {
   try {
@@ -35,27 +35,13 @@ async function getCurrentUser(userId) {
     }
 
     return {
-      id: result.id,
       email: result.email,
-      full_name: result.full_name,
-      first_name: result.first_name,
-      last_name: result.last_name,
+      fullName: result.full_name,
       phone: result.phone,
-      avatar_url: result.avatar_url,
-      date_of_birth: result.date_of_birth,
-      gender: result.gender,
-      country: result.country,
-      state: result.state,
-      address: result.address,
-      city: result.city,
-      postal_code: result.postal_code,
-      role: result.role,
+      avatarUrl: result.avatar_url,
       tier: result.tier,
-      loyalty_points: result.loyalty_points,
-      total_spent: result.total_spent,
-      total_orders: result.total_orders,
-      created_at: result.created_at,
-      updated_at: result.updated_at,
+      loyaltyPoints: result.loyalty_points,
+      createdAt: result.created_at,
     };
   } catch (error) {
     if (error.isOperational) {
@@ -68,7 +54,7 @@ async function getCurrentUser(userId) {
 /**
  * Update current user profile
  * @param {string} userId User Id from token
- * @param {Object} userData User data to update
+ * @param {Object} userData User data to update (fullName, phone, avatarUrl, dateOfBirth, gender)
  */
 async function updateCurrentUser(userId, userData) {
   try {
@@ -77,26 +63,11 @@ async function updateCurrentUser(userId, userData) {
     }
 
     const errs = [];
-    if (!userData.email) {
-      errs.push({ field: "email", message: "Email là bắt buộc" });
+    if (!userData.full_name) {
+      errs.push({ field: "full_name", message: "Họ tên là bắt buộc" });
     }
     if (!userData.phone) {
       errs.push({ field: "phone", message: "Số điện thoại là bắt buộc" });
-    }
-    if (!userData.first_name) {
-      errs.push({ field: "first_name", message: "Họ là bắt buộc" });
-    }
-    if (!userData.last_name) {
-      errs.push({ field: "last_name", message: "Tên là bắt buộc" });
-    }
-    if (!userData.country) {
-      errs.push({ field: "country", message: "Quốc gia là bắt buộc" });
-    }
-    if (!userData.address) {
-      errs.push({ field: "address", message: "Địa chỉ là bắt buộc" });
-    }
-    if (!userData.city) {
-      errs.push({ field: "city", message: "Thành phố là bắt buộc" });
     }
 
     if (errs.length > 0) {
@@ -110,16 +81,11 @@ async function updateCurrentUser(userId, userData) {
 
     const updatedUser = await updateUserProfile({
       id: userId,
-      email: userData.email,
+      full_name: userData.full_name,
       phone: userData.phone,
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      country: userData.country,
-      state: userData.state || null,
-      address: userData.address,
-      city: userData.city,
-      postal_code: userData.postal_code || null,
       avatar_url: userData.avatar_url || null,
+      date_of_birth: userData.date_of_birth || null,
+      gender: userData.gender || null,
     });
 
     if (!updatedUser) {
@@ -127,30 +93,19 @@ async function updateCurrentUser(userId, userData) {
     }
 
     return {
-      id: updatedUser.id,
       email: updatedUser.email,
-      full_name: updatedUser.full_name,
-      first_name: updatedUser.first_name,
-      last_name: updatedUser.last_name,
+      fullName: updatedUser.full_name,
       phone: updatedUser.phone,
-      avatar_url: updatedUser.avatar_url,
-      date_of_birth: updatedUser.date_of_birth,
-      gender: updatedUser.gender,
-      country: updatedUser.country,
-      state: updatedUser.state,
-      address: updatedUser.address,
-      city: updatedUser.city,
-      postal_code: updatedUser.postal_code,
-      role: updatedUser.role,
+      avatarUrl: updatedUser.avatar_url,
       tier: updatedUser.tier,
-      loyalty_points: updatedUser.loyalty_points,
-      total_spent: updatedUser.total_spent,
-      total_orders: updatedUser.total_orders,
-      created_at: updatedUser.created_at,
-      updated_at: updatedUser.updated_at,
+      loyaltyPoints: updatedUser.loyalty_points,
+      createdAt: updatedUser.created_at,
     };
   } catch (error) {
-    throw error;
+    if (error.isOperational) {
+      throw error;
+    }
+    throw createError(DB_ERRORS);
   }
 }
 

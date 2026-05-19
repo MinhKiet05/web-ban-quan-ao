@@ -36,29 +36,47 @@ export const uploadAvatarToCloudinary = async (file) => {
       throw new Error('Vui lòng đăng nhập lại');
     }
 
+    console.log('Requesting signature from:', `${SIGNATURE_API_URL}/users/avatar/signature`);
+
     // Try local backend first for signature
     let signatureResponse = await fetch(`${SIGNATURE_API_URL}/users/avatar/signature`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
-    }).catch(err => null);
+    }).catch(err => {
+      console.error('Local backend fetch error:', err);
+      return null;
+    });
 
-    const signatureData = signatureResponse ? await signatureResponse.json() : null;
+    let signatureData = null;
+    
+    if (signatureResponse) {
+      try {
+        signatureData = await signatureResponse.json();
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+      }
+    }
     
     // If local backend fails, try production backend (if it has the endpoint)
     if (!signatureResponse?.ok && BASE_URL !== SIGNATURE_API_URL) {
       console.warn('Local backend unavailable, trying production...');
-      signatureResponse = await fetch(`${BASE_URL}/users/avatar/signature`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      try {
+        signatureResponse = await fetch(`${BASE_URL}/users/avatar/signature`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        signatureData = await signatureResponse.json();
+      } catch (e) {
+        console.error('Production backend fetch error:', e);
+      }
     }
 
     if (!signatureResponse?.ok) {
-      const errorData = signatureData || (signatureResponse ? await signatureResponse.json() : {});
+      const errorData = signatureData || {};
       console.error('Signature API error:', {
         status: signatureResponse?.status,
         data: errorData
@@ -66,9 +84,9 @@ export const uploadAvatarToCloudinary = async (file) => {
       throw new Error(errorData?.error?.message || `Không thể lấy signature upload (${signatureResponse?.status || 'Network error'})`);
     }
 
-    const finalData = signatureData || await signatureResponse.json();
+    const finalData = signatureData;
     
-    if (!finalData.success || !finalData.data) {
+    if (!finalData?.success || !finalData?.data) {
       console.error('Invalid signature response:', finalData);
       throw new Error('Dữ liệu signature không hợp lệ');
     }

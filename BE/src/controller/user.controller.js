@@ -88,29 +88,19 @@ const UserController = {
     try {
       const userId = req.user.id;
       const {
-        email,
+        full_name,
         phone,
-        first_name,
-        last_name,
-        country,
-        state,
-        address,
-        city,
-        postal_code,
         avatar_url,
+        date_of_birth,
+        gender,
       } = req.body;
 
       const user = await updateCurrentUser(userId, {
-        email,
+        full_name,
         phone,
-        first_name,
-        last_name,
-        country,
-        state,
-        address,
-        city,
-        postal_code,
         avatar_url,
+        date_of_birth,
+        gender,
       });
 
       return res.status(HTTP_STATUS.OK).json({
